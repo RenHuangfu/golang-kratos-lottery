@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package api.lottery.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "lottery/api/lottery/v1;v1";
+option java_multiple_files = true;
+
+service Admin {
+  rpc AddPrize(AddPrizeRequest) returns(AddPrizeResponse) {
+    option (google.api.http) = {
+      post : "/admin/add_prize",
+      body : "*",
+    };
+  }
+
+  rpc AddPrizeList(AddPrizeListRequest) returns(AddPrizeListResponse){
+    option (google.api.http) = {
+      post : "/admin/add_prize_list",
+      body : "*",
+    };
+  }
+
+  rpc ClearPrize(ClearPrizeRequest) returns(ClearPrizeResponse){
+    option (google.api.http) = {
+      post : "/admin/clear_prize",
+      body : "*",
+    };
+  }
+
+  rpc ImportCoupon(ImportCouponRequest) returns(ImportCouponResponse){
+    option (google.api.http) = {
+      post : "/admin/import_coupon",
+      body : "*",
+    };
+  }
+
+  rpc ImportCouponWithCache(ImportCouponWithCacheRequest) returns(ImportCouponWithCacheResponse){
+    option (google.api.http) = {
+      post : "/admin/import_coupon_cache",
+      body : "*",
+    };
+  }
+
+  rpc ClearCoupon(ClearCouponRequest) returns(ClearCouponResponse){
+    option (google.api.http) = {
+      post : "/admin/clear_coupon",
+      body : "*",
+    };
+  }
+
+  rpc ClearLotteryTimes(ClearLotteryTimesRequest) returns(ClearLotteryTimesResponse){
+    option (google.api.http) = {
+      post : "/admin/clear_lottery_times",
+      body : "*",
+    };
+  }
+
+  rpc ClearResult(ClearResultRequest) returns(ClearResultResponse){
+    option (google.api.http) = {
+      post : "/admin/clear_result",
+      body : "*",
+    };
+  }
+}
+
+message Prize {
+  uint32 id = 1;
+  string title = 2;
+  string img = 3;
+  int32 prize_num = 4;
+  string prize_code = 5;
+  uint32 prize_time = 6;
+  int32 left_num = 7;
+  uint32 prize_type = 8;
+  string prize_plan = 9;
+  int64 begin_time = 10;
+  int64 end_time = 11;
+  uint32 display_order = 12;
+  uint32 sys_status = 13;
+}
+
+message AddPrizeRequest {
+  Prize prize = 1;
+}
+
+message AddPrizeResponse {}
+
+message AddPrizeListRequest {
+  repeated Prize prizes = 1;
+}
+
+message AddPrizeListResponse {}
+
+message ClearPrizeRequest {}
+
+message ClearPrizeResponse {}
+
+message ImportCouponRequest {
+  int32 prize_id = 1;
+  string codes = 2;
+}
+
+message ImportCouponResponse {}
+
+message ImportCouponWithCacheRequest {
+  int32 prize_id = 1;
+  string codes = 2;
+}
+
+message ImportCouponWithCacheResponse {}
+
+message ClearCouponRequest {}
+
+message ClearCouponResponse {}
+
+message ClearLotteryTimesRequest {}
+
+message ClearLotteryTimesResponse {}
+
+message ClearResultRequest {}
+
+message ClearResultResponse {}

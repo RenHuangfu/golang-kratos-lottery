@@ -3,10 +3,154 @@
 
 openapi: 3.0.3
 info:
-    title: Lottery API
+    title: ""
     version: 0.0.1
 paths:
-    /lottery:
+    /admin/add_prize:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_AddPrize
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.AddPrizeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.AddPrizeResponse'
+    /admin/add_prize_list:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_AddPrizeList
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.AddPrizeListRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.AddPrizeListResponse'
+    /admin/clear_coupon:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ClearCoupon
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ClearCouponRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ClearCouponResponse'
+    /admin/clear_lottery_times:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ClearLotteryTimes
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ClearLotteryTimesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ClearLotteryTimesResponse'
+    /admin/clear_prize:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ClearPrize
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ClearPrizeRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ClearPrizeResponse'
+    /admin/clear_result:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ClearResult
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ClearResultRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ClearResultResponse'
+    /admin/import_coupon:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ImportCoupon
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ImportCouponRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ImportCouponResponse'
+    /admin/import_coupon_cache:
+        post:
+            tags:
+                - Admin
+            operationId: Admin_ImportCouponWithCache
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.ImportCouponWithCacheRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.ImportCouponWithCacheResponse'
+    /v1/lottery:
         post:
             tags:
                 - Lottery
@@ -24,8 +168,86 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/api.lottery.v1.LotteryRsp'
+    /v2/lottery:
+        post:
+            tags:
+                - Lottery
+            operationId: Lottery_LotteryV2
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.LotteryReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.LotteryRsp'
+    /v3/lottery:
+        post:
+            tags:
+                - Lottery
+            operationId: Lottery_LotteryV3
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/api.lottery.v1.LotteryReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/api.lottery.v1.LotteryRsp'
 components:
     schemas:
+        api.lottery.v1.AddPrizeListRequest:
+            type: object
+            properties:
+                prizes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/api.lottery.v1.Prize'
+        api.lottery.v1.AddPrizeListResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.AddPrizeRequest:
+            type: object
+            properties:
+                prize:
+                    $ref: '#/components/schemas/api.lottery.v1.Prize'
+        api.lottery.v1.AddPrizeResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearCouponRequest:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearCouponResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearLotteryTimesRequest:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearLotteryTimesResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearPrizeRequest:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearPrizeResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearResultRequest:
+            type: object
+            properties: {}
+        api.lottery.v1.ClearResultResponse:
+            type: object
+            properties: {}
         api.lottery.v1.CommonRspInfo:
             type: object
             properties:
@@ -34,6 +256,28 @@ components:
                     format: int32
                 msg:
                     type: string
+        api.lottery.v1.ImportCouponRequest:
+            type: object
+            properties:
+                prizeId:
+                    type: integer
+                    format: int32
+                codes:
+                    type: string
+        api.lottery.v1.ImportCouponResponse:
+            type: object
+            properties: {}
+        api.lottery.v1.ImportCouponWithCacheRequest:
+            type: object
+            properties:
+                prizeId:
+                    type: integer
+                    format: int32
+                codes:
+                    type: string
+        api.lottery.v1.ImportCouponWithCacheResponse:
+            type: object
+            properties: {}
         api.lottery.v1.LotteryPrizeInfo:
             type: object
             properties:
@@ -83,5 +327,42 @@ components:
                     $ref: '#/components/schemas/api.lottery.v1.CommonRspInfo'
                 prizeInfo:
                     $ref: '#/components/schemas/api.lottery.v1.LotteryPrizeInfo'
+        api.lottery.v1.Prize:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: uint32
+                title:
+                    type: string
+                img:
+                    type: string
+                prizeNum:
+                    type: integer
+                    format: int32
+                prizeCode:
+                    type: string
+                prizeTime:
+                    type: integer
+                    format: uint32
+                leftNum:
+                    type: integer
+                    format: int32
+                prizeType:
+                    type: integer
+                    format: uint32
+                prizePlan:
+                    type: string
+                beginTime:
+                    type: string
+                endTime:
+                    type: string
+                displayOrder:
+                    type: integer
+                    format: uint32
+                sysStatus:
+                    type: integer
+                    format: uint32
 tags:
+    - name: Admin
     - name: Lottery

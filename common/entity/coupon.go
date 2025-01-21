@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -13,22 +13,4 @@ type Coupon struct {
 
 func (c *Coupon) TableName() string {
 	return "t_coupon"
-}
-
-type CouponRepo interface {
-	Get(id uint) (*Coupon, error)
-	GetAll() ([]*Coupon, error)
-	GetCouponListByPrizeID(prizeID uint) ([]*Coupon, error)
-	CountAll() (int64, error)
-	Create(coupon *Coupon) error
-	Delete(id uint) error
-	DeleteAllWithCache() error
-	Update(coupon *Coupon, cols ...string) error
-	UpdateByCode(code string, coupon *Coupon, cols ...string) error
-	GetFromCache(id uint) (*Coupon, error)
-	GetGetNextUsefulCoupon(prizeID, couponID int) (*Coupon, error)
-	ImportCacheCoupon(prizeID uint, code string) (bool, error)
-	ReSetCacheCoupon(prizeID uint) (int64, int64, error)
-	GetCacheCouponNum(prizeID uint) (int64, int64, error)
-	GetNextUsefulCouponFromCache(prizeID int) (string, error)
 }

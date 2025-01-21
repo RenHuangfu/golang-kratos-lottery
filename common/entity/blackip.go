@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -13,20 +13,4 @@ type BlackIp struct {
 
 func (m *BlackIp) TableName() string {
 	return "t_black_ip"
-}
-
-type BlackIpRepo interface {
-	Get(id uint) (*BlackIp, error)
-	GetByIP(ip string) (*BlackIp, error)
-	GetByIPWithCache(ip string) (*BlackIp, error)
-	GetAll() ([]*BlackIp, error)
-	CountAll() (int64, error)
-	Create(blackIp *BlackIp) error
-	Delete(id uint) error
-	Update(ip string, blackIp *BlackIp, cols ...string) error
-	UpdateWithCache(ip string, blackIp *BlackIp, cols ...string) error
-	GetFromCache(id uint) (*BlackIp, error)
-	SetByCache(blackIp *BlackIp) error
-	GetByCache(ip string) (*BlackIp, error)
-	UpdateByCache(blackIp *BlackIp) error
 }

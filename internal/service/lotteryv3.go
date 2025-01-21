@@ -6,8 +6,8 @@ import (
 	"github.com/BitofferHub/pkg/middlewares/lock"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	pb "lottery/api/lottery/v1"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	constant2 "lottery/common/constant"
+	"lottery/common/entity"
 	"lottery/internal/utils"
 )
 
@@ -36,7 +36,7 @@ func (l *LotteryService) LotteryV3(ctx context.Context, req *pb.LotteryReq) (*pb
 	//}
 	userID := uint(req.UserId)
 	log.Infof("LotteryV3|user_id=%d", userID)
-	lockKey := fmt.Sprintf(constant.LotteryLockKeyPrefix+"%d", userID)
+	lockKey := fmt.Sprintf(constant2.LotteryLockKeyPrefix+"%d", userID)
 	lock1 := lock.NewRedisLock(lockKey, lock.WithExpireSeconds(5), lock.WithWatchDogMode())
 
 	// 1. 用户抽奖分布式锁定,防重入
@@ -62,7 +62,7 @@ func (l *LotteryService) LotteryV3(ctx context.Context, req *pb.LotteryReq) (*pb
 
 	// 3. 验证当天IP参与的抽奖次数
 	ipDayLotteryTimes := l.limitCase.CheckIPLimit(ctx, req.Ip)
-	if ipDayLotteryTimes > constant.IpLimitMax {
+	if ipDayLotteryTimes > constant2.IpLimitMax {
 		rsp.CommonRsp.Code = int32(ErrIPLimitInvalid)
 		//log.InfoContextf(ctx, "LotteryHandler|CheckUserDayLotteryTimes:%v", err)
 		return rsp, nil
@@ -97,7 +97,7 @@ func (l *LotteryService) LotteryV3(ctx context.Context, req *pb.LotteryReq) (*pb
 	}
 
 	// 6. 中奖逻辑实现
-	prizeCode := utils.Random(constant.PrizeCodeMax)
+	prizeCode := utils.Random(constant2.PrizeCodeMax)
 	log.InfoContextf(ctx, "LotteryHandlerV1|prizeCode=%d\n", prizeCode)
 	prize, err := l.lotteryCase.GetPrizeWithCache(ctx, prizeCode)
 	if err != nil {
@@ -140,7 +140,7 @@ func (l *LotteryService) LotteryV3(ctx context.Context, req *pb.LotteryReq) (*pb
 
 	/***如果中奖记录重要的的话，可以考虑用事务将下面逻辑包裹*****/
 	// 8. 发优惠券
-	if prize.PrizeType == constant.PrizeTypeCouponDiff {
+	if prize.PrizeType == constant2.PrizeTypeCouponDiff {
 		code, err := l.lotteryCase.PrizeCouponDiffWithCache(ctx, int(prize.Id))
 		if err != nil {
 			rsp.CommonRsp.Code = int32(ErrInternalServer)
@@ -176,8 +176,8 @@ func (l *LotteryService) LotteryV3(ctx context.Context, req *pb.LotteryReq) (*pb
 	}
 
 	// 10. 如果中了实物大奖，需要把ip和用户置于黑明单中一段时间，防止同一个用户频繁中大奖
-	if prize.PrizeType == constant.PrizeTypeEntityLarge {
-		lotteryUserInfo := biz.LotteryUserInfo{
+	if prize.PrizeType == constant2.PrizeTypeEntityLarge {
+		lotteryUserInfo := entity.LotteryUserInfo{
 			UserID:   userID,
 			UserName: req.UserName,
 			IP:       req.Ip,

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/cache"
 	"github.com/BitofferHub/pkg/middlewares/log"
-	"lottery/internal/constant"
+	"lottery/common/constant"
 	"lottery/internal/utils"
 	"time"
 )

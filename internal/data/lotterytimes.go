@@ -6,8 +6,9 @@ import (
 	"github.com/BitofferHub/pkg/middlewares/cache"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"math"
 )
 
@@ -15,18 +16,18 @@ type lotteryTimesRepo struct {
 	data *Data
 }
 
-func NewLotteryTimesRepo(data *Data) biz.LotteryTimesRepo {
+func NewLotteryTimesRepo(data *Data) repo.LotteryTimesRepo {
 	return &lotteryTimesRepo{
 		data: data,
 	}
 }
 
-func (r *lotteryTimesRepo) Get(id uint) (*biz.LotteryTimes, error) {
+func (r *lotteryTimesRepo) Get(id uint) (*entity.LotteryTimes, error) {
 	db := r.data.db
-	lotteryTimes := &biz.LotteryTimes{
+	lotteryTimes := &entity.LotteryTimes{
 		Id: id,
 	}
-	err := db.Model(&biz.LotteryTimes{}).First(lotteryTimes).Error
+	err := db.Model(&entity.LotteryTimes{}).First(lotteryTimes).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -36,10 +37,10 @@ func (r *lotteryTimesRepo) Get(id uint) (*biz.LotteryTimes, error) {
 	return lotteryTimes, nil
 }
 
-func (r *lotteryTimesRepo) GetByUserIDAndDay(uid uint, day uint) (*biz.LotteryTimes, error) {
+func (r *lotteryTimesRepo) GetByUserIDAndDay(uid uint, day uint) (*entity.LotteryTimes, error) {
 	db := r.data.db
-	lotteryTimes := &biz.LotteryTimes{}
-	err := db.Model(&biz.LotteryTimes{}).Where("user_id=? and day=?", uid, day).First(lotteryTimes).Error
+	lotteryTimes := &entity.LotteryTimes{}
+	err := db.Model(&entity.LotteryTimes{}).Where("user_id=? and day=?", uid, day).First(lotteryTimes).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -49,10 +50,10 @@ func (r *lotteryTimesRepo) GetByUserIDAndDay(uid uint, day uint) (*biz.LotteryTi
 	return lotteryTimes, nil
 }
 
-func (r *lotteryTimesRepo) GetAll() ([]*biz.LotteryTimes, error) {
+func (r *lotteryTimesRepo) GetAll() ([]*entity.LotteryTimes, error) {
 	db := r.data.db
-	var lotteryTimesList []*biz.LotteryTimes
-	err := db.Model(&biz.LotteryTimes{}).Where("").Order("sys_updated desc").Find(&lotteryTimesList).Error
+	var lotteryTimesList []*entity.LotteryTimes
+	err := db.Model(&entity.LotteryTimes{}).Where("").Order("sys_updated desc").Find(&lotteryTimesList).Error
 	if err != nil {
 		return nil, fmt.Errorf("lotteryTimesRepo|GetAll:%v", err)
 	}
@@ -62,16 +63,16 @@ func (r *lotteryTimesRepo) GetAll() ([]*biz.LotteryTimes, error) {
 func (r *lotteryTimesRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.LotteryTimes{}).Count(&num).Error
+	err := db.Model(&entity.LotteryTimes{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("lotteryTimesRepo|CountAll:%v", err)
 	}
 	return num, nil
 }
 
-func (r *lotteryTimesRepo) Create(lotteryTimes *biz.LotteryTimes) error {
+func (r *lotteryTimesRepo) Create(lotteryTimes *entity.LotteryTimes) error {
 	db := r.data.db
-	err := db.Model(&biz.LotteryTimes{}).Create(lotteryTimes).Error
+	err := db.Model(&entity.LotteryTimes{}).Create(lotteryTimes).Error
 	if err != nil {
 		return fmt.Errorf("lotteryTimesRepo|Create:%v", err)
 	}
@@ -80,8 +81,8 @@ func (r *lotteryTimesRepo) Create(lotteryTimes *biz.LotteryTimes) error {
 
 func (r *lotteryTimesRepo) Delete(id uint) error {
 	db := r.data.db
-	lotteryTimes := &biz.LotteryTimes{Id: id}
-	if err := db.Model(&biz.LotteryTimes{}).Delete(lotteryTimes).Error; err != nil {
+	lotteryTimes := &entity.LotteryTimes{Id: id}
+	if err := db.Model(&entity.LotteryTimes{}).Delete(lotteryTimes).Error; err != nil {
 		return fmt.Errorf("lotteryTimesRepo|Delete:%v", err)
 	}
 	return nil
@@ -96,7 +97,7 @@ func (r *lotteryTimesRepo) DeleteAll() error {
 	return nil
 }
 
-func (r *lotteryTimesRepo) Update(lotteryTimes *biz.LotteryTimes, cols ...string) error {
+func (r *lotteryTimesRepo) Update(lotteryTimes *entity.LotteryTimes, cols ...string) error {
 	var err error
 	db := r.data.db
 	if len(cols) == 0 {

@@ -7,14 +7,14 @@
 package main
 
 import (
-	"lottery/internal/biz"
+	"github.com/go-kratos/kratos/v2"
+	"github.com/google/wire"
 	"lottery/internal/conf"
 	"lottery/internal/data"
-	"lottery/internal/interfaces"
 	"lottery/internal/server"
 	"lottery/internal/service"
 	"lottery/internal/task"
-	"github.com/go-kratos/kratos/v2"
+	"lottery/internal/usecase"
 )
 
 import (
@@ -23,16 +23,7 @@ import (
 
 // Injectors from wire.go:
 
-// wireApp
-//
-//	@Author <a href="https://bitoffer.cn">狂飙训练营</a>
-//	@Description: wireApp init kratos application.
-//	@param *conf.Server
-//	@param *conf.Data
-//	@return *kratos.App
-//	@return func()
-//	@return error
-func wireApp(confServer *conf.Server, confData *conf.Data) (*kratos.App, func(), error) {
+func initApp(confServer *conf.Server, confData *conf.Data) (*kratos.App, error) {
 	db := data.NewDatabase(confData)
 	client := data.NewCache(confData)
 	dataData := data.NewData(db, client)
@@ -41,18 +32,25 @@ func wireApp(confServer *conf.Server, confData *conf.Data) (*kratos.App, func(),
 	blackUserRepo := data.NewBlackUserRepo(dataData)
 	blackIpRepo := data.NewBlackIpRepo(dataData)
 	resultRepo := data.NewResultRepo(dataData)
-	transaction := data.NewTransaction(dataData)
-	lotteryCase := biz.NewLotteryCase(prizeRepo, couponRepo, blackUserRepo, blackIpRepo, resultRepo, transaction)
+	lotteryCase := usecase.NewLotteryCase(prizeRepo, couponRepo, blackUserRepo, blackIpRepo, resultRepo)
 	lotteryTimesRepo := data.NewLotteryTimesRepo(dataData)
-	limitCase := biz.NewLimitCase(blackUserRepo, blackIpRepo, lotteryTimesRepo, transaction)
-	adminCase := biz.NewAdminCase(prizeRepo, couponRepo, lotteryTimesRepo, resultRepo)
+	limitCase := usecase.NewLimitCase(blackUserRepo, blackIpRepo, lotteryTimesRepo)
+	adminCase := usecase.NewAdminCase(prizeRepo, couponRepo, lotteryTimesRepo, resultRepo)
 	lotteryService := service.NewLotteryService(lotteryCase, limitCase, adminCase)
 	grpcServer := server.NewGRPCServer(confServer, lotteryService)
 	adminService := service.NewAdminService(adminCase)
-	handler := interfaces.NewHandler(lotteryService, adminService)
-	httpServer := server.NewHTTPServer(confServer, handler)
+	httpServer := server.NewHTTPServer(confServer, lotteryService, adminService)
 	taskServer := task.NewTaskServer(lotteryService, confServer)
 	app := newApp(grpcServer, httpServer, taskServer)
-	return app, func() {
-	}, nil
+	return app, nil
 }
+
+// wire.go:
+
+var DataProviderSet = wire.NewSet(data.NewData, data.NewDatabase, data.NewCache, data.NewCouponRepo, data.NewPrizeRepo, data.NewResultRepo, data.NewBlackIpRepo, data.NewBlackUserRepo, data.NewLotteryTimesRepo)
+
+var ServiceProviderSet = wire.NewSet(service.NewLotteryService, service.NewAdminService)
+
+var UsecaseProviderSet = wire.NewSet(usecase.NewAdminCase, usecase.NewLotteryCase, usecase.NewLimitCase)
+
+var SeverProviderSet = wire.NewSet(task.NewTaskServer, server.NewGRPCServer, server.NewHTTPServer)

@@ -20,14 +20,20 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationLotteryLotteryV1 = "/api.lottery.v1.Lottery/LotteryV1"
+const OperationLotteryLotteryV2 = "/api.lottery.v1.Lottery/LotteryV2"
+const OperationLotteryLotteryV3 = "/api.lottery.v1.Lottery/LotteryV3"
 
 type LotteryHTTPServer interface {
 	LotteryV1(context.Context, *LotteryReq) (*LotteryRsp, error)
+	LotteryV2(context.Context, *LotteryReq) (*LotteryRsp, error)
+	LotteryV3(context.Context, *LotteryReq) (*LotteryRsp, error)
 }
 
 func RegisterLotteryHTTPServer(s *http.Server, srv LotteryHTTPServer) {
 	r := s.Route("/")
-	r.POST("/lottery", _Lottery_LotteryV10_HTTP_Handler(srv))
+	r.POST("/v1/lottery", _Lottery_LotteryV10_HTTP_Handler(srv))
+	r.POST("/v2/lottery", _Lottery_LotteryV20_HTTP_Handler(srv))
+	r.POST("/v3/lottery", _Lottery_LotteryV30_HTTP_Handler(srv))
 }
 
 func _Lottery_LotteryV10_HTTP_Handler(srv LotteryHTTPServer) func(ctx http.Context) error {
@@ -52,8 +58,54 @@ func _Lottery_LotteryV10_HTTP_Handler(srv LotteryHTTPServer) func(ctx http.Conte
 	}
 }
 
+func _Lottery_LotteryV20_HTTP_Handler(srv LotteryHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LotteryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLotteryLotteryV2)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LotteryV2(ctx, req.(*LotteryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LotteryRsp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Lottery_LotteryV30_HTTP_Handler(srv LotteryHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LotteryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLotteryLotteryV3)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LotteryV3(ctx, req.(*LotteryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LotteryRsp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type LotteryHTTPClient interface {
 	LotteryV1(ctx context.Context, req *LotteryReq, opts ...http.CallOption) (rsp *LotteryRsp, err error)
+	LotteryV2(ctx context.Context, req *LotteryReq, opts ...http.CallOption) (rsp *LotteryRsp, err error)
+	LotteryV3(ctx context.Context, req *LotteryReq, opts ...http.CallOption) (rsp *LotteryRsp, err error)
 }
 
 type LotteryHTTPClientImpl struct {
@@ -66,9 +118,35 @@ func NewLotteryHTTPClient(client *http.Client) LotteryHTTPClient {
 
 func (c *LotteryHTTPClientImpl) LotteryV1(ctx context.Context, in *LotteryReq, opts ...http.CallOption) (*LotteryRsp, error) {
 	var out LotteryRsp
-	pattern := "/lottery"
+	pattern := "/v1/lottery"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationLotteryLotteryV1))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LotteryHTTPClientImpl) LotteryV2(ctx context.Context, in *LotteryReq, opts ...http.CallOption) (*LotteryRsp, error) {
+	var out LotteryRsp
+	pattern := "/v2/lottery"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLotteryLotteryV2))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LotteryHTTPClientImpl) LotteryV3(ctx context.Context, in *LotteryReq, opts ...http.CallOption) (*LotteryRsp, error) {
+	var out LotteryRsp
+	pattern := "/v3/lottery"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLotteryLotteryV3))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

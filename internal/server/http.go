@@ -3,12 +3,13 @@ package server
 import (
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"lottery/api/lottery/v1"
 	"lottery/internal/conf"
-	"lottery/internal/interfaces"
+	"lottery/internal/service"
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, h *interfaces.Handler) *http.Server {
+func NewHTTPServer(c *conf.Server, s *service.LotteryService, a *service.AdminService) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -26,6 +27,7 @@ func NewHTTPServer(c *conf.Server, h *interfaces.Handler) *http.Server {
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
 	srv := http.NewServer(opts...)
-	srv.HandlePrefix("/", interfaces.NewRouter(h))
+	v1.RegisterLotteryHTTPServer(srv, s)
+	v1.RegisterAdminHTTPServer(srv, a)
 	return srv
 }

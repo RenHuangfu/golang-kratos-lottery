@@ -1,39 +1,39 @@
-package biz
+package usecase
 
 import (
 	"context"
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/lock"
 	"github.com/BitofferHub/pkg/middlewares/log"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	entity2 "lottery/common/entity"
+	repo2 "lottery/common/repo"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type LotteryCase struct {
-	prizeRepo     PrizeRepo
-	couponRepo    CouponRepo
-	blackUserRepo BlackUserRepo
-	blackIpRepo   BlackIpRepo
-	resultRepo    ResultRepo
-	tm            Transaction
+	prizeRepo     repo2.PrizeRepo
+	couponRepo    repo2.CouponRepo
+	blackUserRepo repo2.BlackUserRepo
+	blackIpRepo   repo2.BlackIpRepo
+	resultRepo    repo2.ResultRepo
 }
 
-func NewLotteryCase(pr PrizeRepo, cr CouponRepo, bur BlackUserRepo,
-	bir BlackIpRepo, result ResultRepo, tm Transaction) *LotteryCase {
+func NewLotteryCase(pr repo2.PrizeRepo, cr repo2.CouponRepo, bur repo2.BlackUserRepo,
+	bir repo2.BlackIpRepo, result repo2.ResultRepo) *LotteryCase {
 	return &LotteryCase{
 		prizeRepo:     pr,
 		couponRepo:    cr,
 		blackUserRepo: bur,
 		blackIpRepo:   bir,
 		resultRepo:    result,
-		tm:            tm,
 	}
 }
 
-func (l *LotteryCase) GetPrize(ctx context.Context, prizeCode int) (*LotteryPrize, error) {
-	var prize *LotteryPrize
+func (l *LotteryCase) GetPrize(ctx context.Context, prizeCode int) (*entity2.LotteryPrize, error) {
+	var prize *entity2.LotteryPrize
 	lotteryPrizeList, err := l.GetAllUsefulPrizes(ctx)
 	if err != nil {
 		log.ErrorContextf(ctx, "LotteryCase|ToLotteryPrize:%v", err)
@@ -53,8 +53,8 @@ func (l *LotteryCase) GetPrize(ctx context.Context, prizeCode int) (*LotteryPriz
 }
 
 // GetPrizeWithCache 获取中奖的奖品类型
-func (l *LotteryCase) GetPrizeWithCache(ctx context.Context, prizeCode int) (*LotteryPrize, error) {
-	var prize *LotteryPrize
+func (l *LotteryCase) GetPrizeWithCache(ctx context.Context, prizeCode int) (*entity2.LotteryPrize, error) {
+	var prize *entity2.LotteryPrize
 	lotteryPrizeList, err := l.GetAllUsefulPrizesWithCache(ctx)
 	if err != nil {
 		log.ErrorContextf(ctx, "LotteryCase|ToLotteryPrize:%v", err)
@@ -99,7 +99,7 @@ func (l *LotteryCase) GiveOutPrizeWithCache(ctx context.Context, prizeID int) (b
 		return false, nil
 	}
 	// 扣减库存成功
-	if err = l.prizeRepo.UpdateByCache(&Prize{Id: uint(prizeID)}); err != nil {
+	if err = l.prizeRepo.UpdateByCache(&entity2.Prize{Id: uint(prizeID)}); err != nil {
 		log.ErrorContextf(ctx, "LotteryCase|GiveOutPrize|UpdateByCache err:%v", err)
 		return false, fmt.Errorf("LotteryCase|GiveOutPrize|UpdateByCache:%v", err)
 	}
@@ -121,7 +121,7 @@ func (l *LotteryCase) GiveOutPrizeWithPool(ctx context.Context, prizeID int) (bo
 }
 
 // GetAllUsefulPrizes 获取所有可用奖品
-func (l *LotteryCase) GetAllUsefulPrizes(ctx context.Context) ([]*LotteryPrize, error) {
+func (l *LotteryCase) GetAllUsefulPrizes(ctx context.Context) ([]*entity2.LotteryPrize, error) {
 	list, err := l.prizeRepo.GetAllUsefulPrizeList()
 	if err != nil {
 		log.ErrorContextf(ctx, "LotteryCase|GetAllUsefulPrizes:%v", err)
@@ -130,7 +130,7 @@ func (l *LotteryCase) GetAllUsefulPrizes(ctx context.Context) ([]*LotteryPrize, 
 	if len(list) == 0 {
 		return nil, nil
 	}
-	lotteryPrizeList := make([]*LotteryPrize, 0)
+	lotteryPrizeList := make([]*entity2.LotteryPrize, 0)
 	for _, prize := range list {
 		codes := strings.Split(prize.PrizeCode, "-")
 		if len(codes) == 2 {
@@ -140,7 +140,7 @@ func (l *LotteryCase) GetAllUsefulPrizes(ctx context.Context) ([]*LotteryPrize, 
 			low, err1 := strconv.Atoi(codeA)
 			high, err2 := strconv.Atoi(codeB)
 			if err1 == nil && err2 == nil && high >= low && low >= 0 && high < constant.PrizeCodeMax {
-				lotteryPrize := &LotteryPrize{
+				lotteryPrize := &entity2.LotteryPrize{
 					Id:            prize.Id,
 					Title:         prize.Title,
 					PrizeNum:      prize.PrizeNum,
@@ -159,7 +159,7 @@ func (l *LotteryCase) GetAllUsefulPrizes(ctx context.Context) ([]*LotteryPrize, 
 	return lotteryPrizeList, nil
 }
 
-func (l *LotteryCase) GetAllUsefulPrizesWithCache(ctx context.Context) ([]*LotteryPrize, error) {
+func (l *LotteryCase) GetAllUsefulPrizesWithCache(ctx context.Context) ([]*entity2.LotteryPrize, error) {
 	// 筛选出符合条件的奖品列表
 	list, err := l.prizeRepo.GetAllUsefulPrizeListWithCache()
 	if err != nil {
@@ -170,7 +170,7 @@ func (l *LotteryCase) GetAllUsefulPrizesWithCache(ctx context.Context) ([]*Lotte
 		return nil, nil
 	}
 	// 对db的prize做一个类型转换，转化为LotteryPrize
-	lotteryPrizeList := make([]*LotteryPrize, 0)
+	lotteryPrizeList := make([]*entity2.LotteryPrize, 0)
 	for _, prize := range list {
 		codes := strings.Split(prize.PrizeCode, "-")
 		if len(codes) == 2 {
@@ -180,7 +180,7 @@ func (l *LotteryCase) GetAllUsefulPrizesWithCache(ctx context.Context) ([]*Lotte
 			low, err1 := strconv.Atoi(codeA)
 			high, err2 := strconv.Atoi(codeB)
 			if err1 == nil && err2 == nil && high >= low && low >= 0 && high < constant.PrizeCodeMax {
-				lotteryPrize := &LotteryPrize{
+				lotteryPrize := &entity2.LotteryPrize{
 					Id:            prize.Id,
 					Title:         prize.Title,
 					PrizeNum:      prize.PrizeNum,
@@ -240,7 +240,7 @@ func (l *LotteryCase) PrizeCouponDiffWithCache(ctx context.Context, prizeID int)
 		log.InfoContextf(ctx, "LotteryCase|PrizeCouponDiffByCache code is nil with prize_id=%d", prizeID)
 		return "", nil
 	}
-	coupon := Coupon{
+	coupon := entity2.Coupon{
 		Code:      code,
 		SysStatus: 2,
 	}
@@ -250,13 +250,13 @@ func (l *LotteryCase) PrizeCouponDiffWithCache(ctx context.Context, prizeID int)
 	return code, nil
 }
 
-func (l *LotteryCase) PrizeLargeBlackLimit(ctx context.Context, blackUser *BlackUser,
-	blackIp *BlackIp, lotteryUserInfo *LotteryUserInfo) error {
+func (l *LotteryCase) PrizeLargeBlackLimit(ctx context.Context, blackUser *entity2.BlackUser,
+	blackIp *entity2.BlackIp, lotteryUserInfo *entity2.LotteryUserInfo) error {
 	now := time.Now()
 	blackTime := constant.DefaultBlackTime
 	// 用户黑明单限制
 	if blackUser == nil || blackUser.UserId <= 0 {
-		blackUserInfo := &BlackUser{
+		blackUserInfo := &entity2.BlackUser{
 			UserId:    lotteryUserInfo.UserID,
 			UserName:  lotteryUserInfo.UserName,
 			BlackTime: now.Add(time.Second * time.Duration(blackTime)),
@@ -269,7 +269,7 @@ func (l *LotteryCase) PrizeLargeBlackLimit(ctx context.Context, blackUser *Black
 			return fmt.Errorf("LotteryCase|PrizeLargeBlackLimit:%v", err)
 		}
 	} else {
-		blackUserInfo := &BlackUser{
+		blackUserInfo := &entity2.BlackUser{
 			UserId:    lotteryUserInfo.UserID,
 			BlackTime: now.Add(time.Second * time.Duration(blackTime)),
 		}
@@ -280,7 +280,7 @@ func (l *LotteryCase) PrizeLargeBlackLimit(ctx context.Context, blackUser *Black
 	}
 	// ip黑明但限制
 	if blackIp == nil || blackIp.Ip == "" {
-		blackIPInfo := &BlackIp{
+		blackIPInfo := &entity2.BlackIp{
 			Ip:        lotteryUserInfo.IP,
 			BlackTime: now.Add(time.Second * time.Duration(blackTime)),
 			// SysCreated: time.Time{},
@@ -291,7 +291,7 @@ func (l *LotteryCase) PrizeLargeBlackLimit(ctx context.Context, blackUser *Black
 			return fmt.Errorf("LotteryCase|PrizeLargeBlackLimit:%v", err)
 		}
 	} else {
-		blackIPInfo := &BlackIp{
+		blackIPInfo := &entity2.BlackIp{
 			Ip:        lotteryUserInfo.IP,
 			BlackTime: now.Add(time.Second * time.Duration(blackTime)),
 			// SysUpdated: time.Time{},
@@ -314,8 +314,8 @@ func (l *LotteryCase) GetPrizeNumWithPool(ctx context.Context, prizeID uint) (in
 	return num, nil
 }
 
-func (l *LotteryCase) LotteryResult(ctx context.Context, prize *LotteryPrize, uid uint, userName, ip string, prizeCode int) error {
-	result := Result{
+func (l *LotteryCase) LotteryResult(ctx context.Context, prize *entity2.LotteryPrize, uid uint, userName, ip string, prizeCode int) error {
+	result := entity2.Result{
 		PrizeId:   prize.Id,
 		PrizeName: prize.Title,
 		PrizeType: prize.PrizeType,

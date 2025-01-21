@@ -1,44 +1,16 @@
 package data
 
 import (
-	"context"
 	"github.com/BitofferHub/pkg/middlewares/cache"
 	"github.com/BitofferHub/pkg/middlewares/gormcli"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/google/wire"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
 	"lottery/internal/conf"
 )
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewDatabase, NewCache, NewCouponRepo, NewPrizeRepo,
-	NewResultRepo, NewBlackIpRepo, NewBlackUserRepo, NewLotteryTimesRepo, NewTransaction)
 
 type Data struct {
 	db    *gorm.DB
 	cache *cache.Client
-}
-
-type contextTxKey struct{}
-
-func (d *Data) InTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		ctx = context.WithValue(ctx, contextTxKey{}, tx)
-		return fn(ctx)
-	})
-}
-
-func (d *Data) DB(ctx context.Context) *gorm.DB {
-	tx, ok := ctx.Value(contextTxKey{}).(*gorm.DB)
-	if ok {
-		return tx
-	}
-	return d.db
-}
-
-func NewTransaction(d *Data) biz.Transaction {
-	return d
 }
 
 func NewData(db *gorm.DB, cache *cache.Client) *Data {

@@ -6,12 +6,23 @@ import "google/api/annotations.proto";
 
 option go_package = "lottery/api/lottery/v1;v1";
 option java_multiple_files = true;
-option java_package = "api.lottery.v1";
 
 service Lottery {
   rpc LotteryV1 (LotteryReq) returns (LotteryRsp){
     option (google.api.http) = {
-      post: "/lottery",
+      post: "/v1/lottery",
+      body: "*"
+    };
+  }
+  rpc LotteryV2 (LotteryReq) returns (LotteryRsp){
+    option (google.api.http) = {
+      post: "/v2/lottery",
+      body: "*"
+    };
+  }
+  rpc LotteryV3 (LotteryReq) returns (LotteryRsp){
+    option (google.api.http) = {
+      post: "/v3/lottery",
       body: "*"
     };
   }

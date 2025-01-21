@@ -70,12 +70,10 @@ func main() {
 	}
 
 	InitSource(&bc)
-	app, cleanup, err := wireApp(bc.GetServer(), bc.GetData())
+	app, err := initApp(bc.GetServer(), bc.GetData())
 	if err != nil {
 		panic(err)
 	}
-	defer cleanup()
-
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
 		panic(err)

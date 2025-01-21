@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -19,15 +19,4 @@ type Result struct {
 
 func (r *Result) TableName() string {
 	return "t_result"
-}
-
-type ResultRepo interface {
-	Get(id uint) (*Result, error)
-	GetAll() ([]*Result, error)
-	CountAll() (int64, error)
-	Create(result *Result) error
-	Delete(id uint) error
-	DeleteAll() error
-	Update(result *Result, cols ...string) error
-	GetFromCache(id uint) (*Result, error)
 }

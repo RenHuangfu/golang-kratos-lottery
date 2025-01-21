@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"lottery/internal/utils"
 	"strconv"
 	"time"
@@ -17,18 +18,18 @@ type prizeRepo struct {
 	data *Data
 }
 
-func NewPrizeRepo(data *Data) biz.PrizeRepo {
+func NewPrizeRepo(data *Data) repo.PrizeRepo {
 	return &prizeRepo{
 		data: data,
 	}
 }
 
-func (r *prizeRepo) Get(id uint) (*biz.Prize, error) {
+func (r *prizeRepo) Get(id uint) (*entity.Prize, error) {
 	db := r.data.db
-	prize := &biz.Prize{
+	prize := &entity.Prize{
 		Id: id,
 	}
-	err := db.Model(&biz.Prize{}).First(prize).Error
+	err := db.Model(&entity.Prize{}).First(prize).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -38,7 +39,7 @@ func (r *prizeRepo) Get(id uint) (*biz.Prize, error) {
 	return prize, nil
 }
 
-func (r *prizeRepo) GetWithCache(id uint) (*biz.Prize, error) {
+func (r *prizeRepo) GetWithCache(id uint) (*entity.Prize, error) {
 	prizeList, err := r.GetAllWithCache()
 	if err != nil {
 		return nil, fmt.Errorf("prizeRepo|GetWithCache:%v", err)
@@ -51,17 +52,17 @@ func (r *prizeRepo) GetWithCache(id uint) (*biz.Prize, error) {
 	return nil, nil
 }
 
-func (r *prizeRepo) GetAll() ([]*biz.Prize, error) {
+func (r *prizeRepo) GetAll() ([]*entity.Prize, error) {
 	db := r.data.db
-	var prizes []*biz.Prize
-	err := db.Model(&biz.Prize{}).Find(&prizes).Error
+	var prizes []*entity.Prize
+	err := db.Model(&entity.Prize{}).Find(&prizes).Error
 	if err != nil {
 		return nil, fmt.Errorf("prizeRepo|GetAll:%v", err)
 	}
 	return prizes, nil
 }
 
-func (r *prizeRepo) GetAllWithCache() ([]*biz.Prize, error) {
+func (r *prizeRepo) GetAllWithCache() ([]*entity.Prize, error) {
 	prizeList, err := r.GetAllByCache()
 	if err != nil {
 		return nil, fmt.Errorf("prizeRepo|GetAllWithCache:%v", err)
@@ -83,7 +84,7 @@ func (r *prizeRepo) GetAllWithCache() ([]*biz.Prize, error) {
 func (r *prizeRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.Prize{}).Count(&num).Error
+	err := db.Model(&entity.Prize{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("prizeRepo|CountAll:%v", err)
 	}
@@ -98,25 +99,25 @@ func (r *prizeRepo) CountAllWithCache() (int64, error) {
 	return int64(len(prizeList)), nil
 }
 
-func (r *prizeRepo) Create(prize *biz.Prize) error {
+func (r *prizeRepo) Create(prize *entity.Prize) error {
 	db := r.data.db
-	err := db.Model(&biz.Prize{}).Create(prize).Error
+	err := db.Model(&entity.Prize{}).Create(prize).Error
 	if err != nil {
 		return fmt.Errorf("prizeRepo|Create:%v", err)
 	}
 	return nil
 }
 
-func (r *prizeRepo) CreateInBatches(prizeList []biz.Prize) error {
+func (r *prizeRepo) CreateInBatches(prizeList []entity.Prize) error {
 	db := r.data.db
-	err := db.Model(&biz.Prize{}).Create(&prizeList).Error
+	err := db.Model(&entity.Prize{}).Create(&prizeList).Error
 	if err != nil {
 		return fmt.Errorf("prizeRepo|Create:%v", err)
 	}
 	return nil
 }
 
-func (r *prizeRepo) CreateWithCache(prize *biz.Prize) error {
+func (r *prizeRepo) CreateWithCache(prize *entity.Prize) error {
 	if err := r.UpdateByCache(prize); err != nil {
 		return fmt.Errorf("prizeRepo|CreateWithCache:%v", err)
 	}
@@ -125,8 +126,8 @@ func (r *prizeRepo) CreateWithCache(prize *biz.Prize) error {
 
 func (r *prizeRepo) Delete(id uint) error {
 	db := r.data.db
-	prize := &biz.Prize{Id: id}
-	if err := db.Model(&biz.Prize{}).Delete(prize).Error; err != nil {
+	prize := &entity.Prize{Id: id}
+	if err := db.Model(&entity.Prize{}).Delete(prize).Error; err != nil {
 		return fmt.Errorf("prizeRepo|Delete:%v", err)
 	}
 	return nil
@@ -141,7 +142,7 @@ func (r *prizeRepo) DeleteAll() error {
 }
 
 func (r *prizeRepo) DeleteWithCache(id uint) error {
-	prize := &biz.Prize{
+	prize := &entity.Prize{
 		Id: id,
 	}
 	if err := r.UpdateByCache(prize); err != nil {
@@ -150,7 +151,7 @@ func (r *prizeRepo) DeleteWithCache(id uint) error {
 	return r.Delete(id)
 }
 
-func (r *prizeRepo) Update(prize *biz.Prize, cols ...string) error {
+func (r *prizeRepo) Update(prize *entity.Prize, cols ...string) error {
 	db := r.data.db
 	var err error
 	if len(cols) == 0 {
@@ -164,7 +165,7 @@ func (r *prizeRepo) Update(prize *biz.Prize, cols ...string) error {
 	return nil
 }
 
-func (r *prizeRepo) UpdateWithCache(prize *biz.Prize, cols ...string) error {
+func (r *prizeRepo) UpdateWithCache(prize *entity.Prize, cols ...string) error {
 	if err := r.UpdateByCache(prize); err != nil {
 		return fmt.Errorf("prizeRepo|UpdateWithCache:%v", err)
 	}
@@ -172,7 +173,7 @@ func (r *prizeRepo) UpdateWithCache(prize *biz.Prize, cols ...string) error {
 }
 
 // GetFromCache 根据id从缓存获取奖品
-func (r *prizeRepo) GetFromCache(id uint) (*biz.Prize, error) {
+func (r *prizeRepo) GetFromCache(id uint) (*entity.Prize, error) {
 	redisCli := r.data.cache
 	idStr := strconv.FormatUint(uint64(id), 10)
 	ret, exist, err := redisCli.Get(context.Background(), idStr)
@@ -185,17 +186,17 @@ func (r *prizeRepo) GetFromCache(id uint) (*biz.Prize, error) {
 		return nil, nil
 	}
 
-	prize := biz.Prize{}
-	json.Unmarshal([]byte(ret), &biz.Prize{})
+	prize := entity.Prize{}
+	json.Unmarshal([]byte(ret), &entity.Prize{})
 
 	return &prize, nil
 }
 
-func (r *prizeRepo) GetAllUsefulPrizeList() ([]*biz.Prize, error) {
+func (r *prizeRepo) GetAllUsefulPrizeList() ([]*entity.Prize, error) {
 	db := r.data.db
 	now := time.Now()
-	list := make([]*biz.Prize, 0)
-	err := db.Model(&biz.Prize{}).Where("begin_time<=?", now).Where("end_time >= ?", now).
+	list := make([]*entity.Prize, 0)
+	err := db.Model(&entity.Prize{}).Where("begin_time<=?", now).Where("end_time >= ?", now).
 		Where("prize_num>?", 0).Where("sys_status=?", 1).Order("sys_updated desc").
 		Order("display_order asc").Find(&list).Error
 	if err != nil {
@@ -205,14 +206,14 @@ func (r *prizeRepo) GetAllUsefulPrizeList() ([]*biz.Prize, error) {
 }
 
 // GetAllUsefulPrizeListWithCache 筛选出符合条件的奖品列表
-func (r *prizeRepo) GetAllUsefulPrizeListWithCache() ([]*biz.Prize, error) {
+func (r *prizeRepo) GetAllUsefulPrizeListWithCache() ([]*entity.Prize, error) {
 	// 优先从缓存取，缓存没取到，从db取
 	prizeList, err := r.GetAllWithCache()
 	if err != nil {
 		return nil, fmt.Errorf("prizeRepo|GetAllUsefulPrizeListWithCache:%v", err)
 	}
 	now := time.Now()
-	dataList := make([]*biz.Prize, 0)
+	dataList := make([]*entity.Prize, 0)
 	for _, prize := range prizeList {
 		if prize.Id > 0 && prize.SysStatus == 1 && prize.PrizeNum > 0 &&
 			prize.BeginTime.Before(now) && prize.EndTime.After(now) {
@@ -225,7 +226,7 @@ func (r *prizeRepo) GetAllUsefulPrizeListWithCache() ([]*biz.Prize, error) {
 func (r *prizeRepo) DecrLeftNum(id int, num int) (bool, error) {
 	db := r.data.db
 	//log.Infof("id: %d, num: %d\n", id, num)
-	res := db.Model(&biz.Prize{}).Where("id = ? and left_num >= ?", id, num).UpdateColumn("left_num", gorm.Expr("left_num - ?", num))
+	res := db.Model(&entity.Prize{}).Where("id = ? and left_num >= ?", id, num).UpdateColumn("left_num", gorm.Expr("left_num - ?", num))
 	if res.Error != nil {
 		return false, fmt.Errorf("prizeRepo|DecrLeftNum:%v", res.Error)
 	}
@@ -249,7 +250,7 @@ func (r *prizeRepo) DecrLeftNumByPool(prizeID int) (int64, error) {
 
 func (r *prizeRepo) IncrLeftNum(id int, column string, num int) error {
 	db := r.data.db
-	if err := db.Model(&biz.Prize{}).Where("id = ?", id).
+	if err := db.Model(&entity.Prize{}).Where("id = ?", id).
 		Update(column, gorm.Expr(column+" + ？", num)).Error; err != nil {
 		return fmt.Errorf("prizeRepo|IncrLeftNum err: %v", err)
 	}
@@ -257,7 +258,7 @@ func (r *prizeRepo) IncrLeftNum(id int, column string, num int) error {
 }
 
 // SetAllByCache 全量数据保存到redis中
-func (r *prizeRepo) SetAllByCache(prizeList []*biz.Prize) error {
+func (r *prizeRepo) SetAllByCache(prizeList []*entity.Prize) error {
 	redisCli := r.data.cache
 	value := ""
 	if len(prizeList) > 0 {
@@ -301,7 +302,7 @@ func (r *prizeRepo) SetAllByCache(prizeList []*biz.Prize) error {
 }
 
 // GetAllByCache 从缓存中获取所有的奖品信息
-func (r *prizeRepo) GetAllByCache() ([]*biz.Prize, error) {
+func (r *prizeRepo) GetAllByCache() ([]*entity.Prize, error) {
 	redisCli := r.data.cache
 	valueStr, ok, err := redisCli.Get(context.Background(), constant.AllPrizeCacheKey)
 	if err != nil {
@@ -322,12 +323,12 @@ func (r *prizeRepo) GetAllByCache() ([]*biz.Prize, error) {
 		log.Errorf("prizeRepo|GetAllByCache:%v", err)
 		return nil, fmt.Errorf("prizeRepo|GetAllByCache:%v", err)
 	}
-	prizeList := make([]*biz.Prize, len(prizeMapList))
+	prizeList := make([]*entity.Prize, len(prizeMapList))
 	for i := 0; i < len(prizeMapList); i++ {
 		prizeMap := prizeMapList[i]
 		id := utils.GetInt64FromMap(prizeMap, "Id", 0)
 		if id <= 0 {
-			prizeList[i] = &biz.Prize{}
+			prizeList[i] = &entity.Prize{}
 			continue
 		}
 		prizeBegin, err := utils.ParseTime(utils.GetStringFromMap(prizeMap, "PrizeBegin", ""))
@@ -360,7 +361,7 @@ func (r *prizeRepo) GetAllByCache() ([]*biz.Prize, error) {
 			log.Errorf("prizeRepo|GetAllByCache ParseTime SysUpdated err:%v", err)
 			return nil, fmt.Errorf("prizeRepo|GetAllByCache:%v", err)
 		}
-		prize := &biz.Prize{
+		prize := &entity.Prize{
 			Id:           uint(id),
 			Title:        utils.GetStringFromMap(prizeMap, "Title", ""),
 			PrizeNum:     int(utils.GetInt64FromMap(prizeMap, "PrizeNum", 0)),
@@ -387,7 +388,7 @@ func (r *prizeRepo) GetAllByCache() ([]*biz.Prize, error) {
 }
 
 // UpdateByCache 数据更新，需要更新缓存，直接清空缓存数据
-func (r *prizeRepo) UpdateByCache(prize *biz.Prize) error {
+func (r *prizeRepo) UpdateByCache(prize *entity.Prize) error {
 	if prize == nil || prize.Id <= 0 {
 		return nil
 	}

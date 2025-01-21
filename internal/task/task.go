@@ -2,15 +2,11 @@ package task
 
 import (
 	"context"
-	"github.com/google/wire"
 	"lottery/internal/conf"
 	"lottery/internal/service"
 	"lottery/internal/utils"
 	"time"
 )
-
-// ProviderSet is service providers.
-var ProviderSet = wire.NewSet(NewTaskServer)
 
 type TaskServer struct {
 	// 需要什么service, 就修改成自己的service

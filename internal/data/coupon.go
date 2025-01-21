@@ -6,34 +6,35 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"strconv"
 )
 
-// biz.Coupon 优惠券表
+// entity.Coupon 优惠券表
 
 type couponRepo struct {
 	data *Data
 }
 
-func NewCouponRepo(data *Data) biz.CouponRepo {
+func NewCouponRepo(data *Data) repo.CouponRepo {
 	return &couponRepo{
 		data: data,
 	}
 }
 
-func (r *couponRepo) Get(id uint) (*biz.Coupon, error) {
+func (r *couponRepo) Get(id uint) (*entity.Coupon, error) {
 	db := r.data.db
 	// 优先从缓存获取
 	coupon, err := r.GetFromCache(id)
 	if err == nil && coupon != nil {
 		return coupon, nil
 	}
-	coupon = &biz.Coupon{
+	coupon = &entity.Coupon{
 		Id: id,
 	}
-	err = db.Model(&biz.Coupon{}).First(coupon).Error
+	err = db.Model(&entity.Coupon{}).First(coupon).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -43,20 +44,20 @@ func (r *couponRepo) Get(id uint) (*biz.Coupon, error) {
 	return coupon, nil
 }
 
-func (r *couponRepo) GetAll() ([]*biz.Coupon, error) {
+func (r *couponRepo) GetAll() ([]*entity.Coupon, error) {
 	db := r.data.db
-	var coupons []*biz.Coupon
-	err := db.Model(&biz.Coupon{}).Order("sys_updated desc").Find(&coupons).Error
+	var coupons []*entity.Coupon
+	err := db.Model(&entity.Coupon{}).Order("sys_updated desc").Find(&coupons).Error
 	if err != nil {
 		return nil, fmt.Errorf("couponRepo|GetAll:%v", err)
 	}
 	return coupons, nil
 }
 
-func (r *couponRepo) GetCouponListByPrizeID(prizeID uint) ([]*biz.Coupon, error) {
+func (r *couponRepo) GetCouponListByPrizeID(prizeID uint) ([]*entity.Coupon, error) {
 	db := r.data.db
-	var coupons []*biz.Coupon
-	err := db.Model(&biz.Coupon{}).Where("prize_id=?", prizeID).Order("id desc").Find(&coupons).Error
+	var coupons []*entity.Coupon
+	err := db.Model(&entity.Coupon{}).Where("prize_id=?", prizeID).Order("id desc").Find(&coupons).Error
 	if err != nil {
 		return nil, fmt.Errorf("couponRepo|GetAll:%v", err)
 	}
@@ -66,16 +67,16 @@ func (r *couponRepo) GetCouponListByPrizeID(prizeID uint) ([]*biz.Coupon, error)
 func (r *couponRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.Coupon{}).Count(&num).Error
+	err := db.Model(&entity.Coupon{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("couponRepo|CountAll:%v", err)
 	}
 	return num, nil
 }
 
-func (r *couponRepo) Create(coupon *biz.Coupon) error {
+func (r *couponRepo) Create(coupon *entity.Coupon) error {
 	db := r.data.db
-	err := db.Model(&biz.Coupon{}).Create(coupon).Error
+	err := db.Model(&entity.Coupon{}).Create(coupon).Error
 	if err != nil {
 		return fmt.Errorf("couponRepo|Create:%v", err)
 	}
@@ -84,8 +85,8 @@ func (r *couponRepo) Create(coupon *biz.Coupon) error {
 
 func (r *couponRepo) Delete(id uint) error {
 	db := r.data.db
-	coupon := &biz.Coupon{Id: id}
-	if err := db.Model(&biz.Coupon{}).Delete(coupon).Error; err != nil {
+	coupon := &entity.Coupon{Id: id}
+	if err := db.Model(&entity.Coupon{}).Delete(coupon).Error; err != nil {
 		return fmt.Errorf("couponRepo|Delete:%v", err)
 	}
 	return nil
@@ -93,8 +94,8 @@ func (r *couponRepo) Delete(id uint) error {
 
 func (r *couponRepo) DeleteAllWithCache() error {
 	db := r.data.db
-	couponList := make([]biz.Coupon, 0)
-	if err := db.Model(&biz.Coupon{}).Select("prize_id").Distinct().Find(&couponList).Error; err != nil {
+	couponList := make([]entity.Coupon, 0)
+	if err := db.Model(&entity.Coupon{}).Select("prize_id").Distinct().Find(&couponList).Error; err != nil {
 		log.Errorf("couponRepo|DeleteAllWithCache:%v", err)
 		return fmt.Errorf("couponRepo|DeleteAllWithCache:%v", err)
 	}
@@ -113,7 +114,7 @@ func (r *couponRepo) DeleteAllWithCache() error {
 	return nil
 }
 
-func (r *couponRepo) Update(coupon *biz.Coupon, cols ...string) error {
+func (r *couponRepo) Update(coupon *entity.Coupon, cols ...string) error {
 	db := r.data.db
 	var err error
 	if len(cols) == 0 {
@@ -127,7 +128,7 @@ func (r *couponRepo) Update(coupon *biz.Coupon, cols ...string) error {
 	return nil
 }
 
-func (r *couponRepo) UpdateByCode(code string, coupon *biz.Coupon, cols ...string) error {
+func (r *couponRepo) UpdateByCode(code string, coupon *entity.Coupon, cols ...string) error {
 	db := r.data.db
 	var err error
 	if len(cols) == 0 {
@@ -142,7 +143,7 @@ func (r *couponRepo) UpdateByCode(code string, coupon *biz.Coupon, cols ...strin
 }
 
 // GetFromCache 根据id从缓存获取奖品
-func (r *couponRepo) GetFromCache(id uint) (*biz.Coupon, error) {
+func (r *couponRepo) GetFromCache(id uint) (*entity.Coupon, error) {
 	redisCli := r.data.cache
 	idStr := strconv.FormatUint(uint64(id), 10)
 	ret, exist, err := redisCli.Get(context.Background(), idStr)
@@ -155,16 +156,16 @@ func (r *couponRepo) GetFromCache(id uint) (*biz.Coupon, error) {
 		return nil, nil
 	}
 
-	coupon := biz.Coupon{}
-	json.Unmarshal([]byte(ret), &biz.Coupon{})
+	coupon := entity.Coupon{}
+	json.Unmarshal([]byte(ret), &entity.Coupon{})
 
 	return &coupon, nil
 }
 
 // GetGetNextUsefulCoupon 获取下一个可用编码的优惠券
-func (r *couponRepo) GetGetNextUsefulCoupon(prizeID, couponID int) (*biz.Coupon, error) {
+func (r *couponRepo) GetGetNextUsefulCoupon(prizeID, couponID int) (*entity.Coupon, error) {
 	db := r.data.db
-	coupon := &biz.Coupon{}
+	coupon := &entity.Coupon{}
 	err := db.Model(coupon).Where("prize_id=?", prizeID).Where("id > ?", couponID).
 		Where("sys_status = ?", 1).First(coupon).Error
 	if err != nil {

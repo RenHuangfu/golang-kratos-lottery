@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -14,19 +14,4 @@ type LotteryTimes struct {
 
 func (l *LotteryTimes) TableName() string {
 	return "t_lottery_times"
-}
-
-type LotteryTimesRepo interface {
-	Get(id uint) (*LotteryTimes, error)
-	GetByUserIDAndDay(uid uint, day uint) (*LotteryTimes, error)
-	GetAll() ([]*LotteryTimes, error)
-	CountAll() (int64, error)
-	Create(lotteryTimes *LotteryTimes) error
-	Delete(id uint) error
-	DeleteAll() error
-	Update(lotteryTimes *LotteryTimes, cols ...string) error
-	IncrUserDayLotteryNum(uid uint) int64
-	InitUserLuckyNum(uid uint, num int64) error
-	ResetIPLotteryNums()
-	ResetUserLotteryNums()
 }

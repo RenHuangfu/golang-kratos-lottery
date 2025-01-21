@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"lottery/internal/utils"
 	"strconv"
 )
@@ -16,23 +17,23 @@ type blackIpRepo struct {
 	data *Data
 }
 
-func NewBlackIpRepo(data *Data) biz.BlackIpRepo {
+func NewBlackIpRepo(data *Data) repo.BlackIpRepo {
 	return &blackIpRepo{
 		data: data,
 	}
 }
 
-func (r *blackIpRepo) Get(id uint) (*biz.BlackIp, error) {
+func (r *blackIpRepo) Get(id uint) (*entity.BlackIp, error) {
 	// 优先从缓存获取
 	db := r.data.db
 	blackIp, err := r.GetFromCache(id)
 	if err == nil && blackIp != nil {
 		return blackIp, nil
 	}
-	blackIp = &biz.BlackIp{
+	blackIp = &entity.BlackIp{
 		Id: id,
 	}
-	err = db.Model(&biz.BlackIp{}).First(blackIp).Error
+	err = db.Model(&entity.BlackIp{}).First(blackIp).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -42,12 +43,12 @@ func (r *blackIpRepo) Get(id uint) (*biz.BlackIp, error) {
 	return blackIp, nil
 }
 
-func (r *blackIpRepo) GetByIP(ip string) (*biz.BlackIp, error) {
+func (r *blackIpRepo) GetByIP(ip string) (*entity.BlackIp, error) {
 	db := r.data.db
-	blackIP := &biz.BlackIp{
+	blackIP := &entity.BlackIp{
 		Ip: ip,
 	}
-	err := db.Model(&biz.BlackIp{}).Where("ip = ?", ip).First(blackIP).Error
+	err := db.Model(&entity.BlackIp{}).Where("ip = ?", ip).First(blackIP).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -57,7 +58,7 @@ func (r *blackIpRepo) GetByIP(ip string) (*biz.BlackIp, error) {
 	return blackIP, nil
 }
 
-func (r *blackIpRepo) GetByIPWithCache(ip string) (*biz.BlackIp, error) {
+func (r *blackIpRepo) GetByIPWithCache(ip string) (*entity.BlackIp, error) {
 	db := r.data.db
 	// 优先从缓存获取
 	blackIp, err := r.GetByCache(ip)
@@ -66,10 +67,10 @@ func (r *blackIpRepo) GetByIPWithCache(ip string) (*biz.BlackIp, error) {
 		return blackIp, nil
 	}
 	// 缓存中没有获取到ip
-	blackIP := &biz.BlackIp{
+	blackIP := &entity.BlackIp{
 		Ip: ip,
 	}
-	err = db.Model(&biz.BlackIp{}).Where("ip = ?", ip).First(blackIP).Error
+	err = db.Model(&entity.BlackIp{}).Where("ip = ?", ip).First(blackIP).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -83,10 +84,10 @@ func (r *blackIpRepo) GetByIPWithCache(ip string) (*biz.BlackIp, error) {
 	return blackIP, nil
 }
 
-func (r *blackIpRepo) GetAll() ([]*biz.BlackIp, error) {
+func (r *blackIpRepo) GetAll() ([]*entity.BlackIp, error) {
 	db := r.data.db
-	var BlackIps []*biz.BlackIp
-	err := db.Model(&biz.BlackIp{}).Where("").Order("sys_updated desc").Find(&BlackIps).Error
+	var BlackIps []*entity.BlackIp
+	err := db.Model(&entity.BlackIp{}).Where("").Order("sys_updated desc").Find(&BlackIps).Error
 	if err != nil {
 		return nil, fmt.Errorf("blackIpRepo|GetAll:%v", err)
 	}
@@ -96,14 +97,14 @@ func (r *blackIpRepo) GetAll() ([]*biz.BlackIp, error) {
 func (r *blackIpRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.BlackIp{}).Count(&num).Error
+	err := db.Model(&entity.BlackIp{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("blackIpRepo|CountAll:%v", err)
 	}
 	return num, nil
 }
 
-func (r *blackIpRepo) Create(blackIp *biz.BlackIp) error {
+func (r *blackIpRepo) Create(blackIp *entity.BlackIp) error {
 	db := r.data.db
 	err := db.Model(blackIp).Create(blackIp).Error
 	if err != nil {
@@ -114,16 +115,16 @@ func (r *blackIpRepo) Create(blackIp *biz.BlackIp) error {
 
 func (r *blackIpRepo) Delete(id uint) error {
 	db := r.data.db
-	blackIp := &biz.BlackIp{Id: id}
+	blackIp := &entity.BlackIp{Id: id}
 	if err := db.Model(blackIp).Delete(blackIp).Error; err != nil {
 		return fmt.Errorf("blackIpRepo|Delete:%v")
 	}
 	return nil
 }
 
-func (r *blackIpRepo) Update(ip string, blackIp *biz.BlackIp, cols ...string) error {
+func (r *blackIpRepo) Update(ip string, blackIp *entity.BlackIp, cols ...string) error {
 	db := r.data.db
-	if err := r.UpdateByCache(&biz.BlackIp{Ip: ip}); err != nil {
+	if err := r.UpdateByCache(&entity.BlackIp{Ip: ip}); err != nil {
 		return fmt.Errorf("blackIpRepo|UpdateWithCache:%v", err)
 	}
 	var err error
@@ -138,9 +139,9 @@ func (r *blackIpRepo) Update(ip string, blackIp *biz.BlackIp, cols ...string) er
 	return nil
 }
 
-func (r *blackIpRepo) UpdateWithCache(ip string, blackIp *biz.BlackIp, cols ...string) error {
+func (r *blackIpRepo) UpdateWithCache(ip string, blackIp *entity.BlackIp, cols ...string) error {
 	db := r.data.db
-	if err := r.UpdateByCache(&biz.BlackIp{Ip: ip}); err != nil {
+	if err := r.UpdateByCache(&entity.BlackIp{Ip: ip}); err != nil {
 		return fmt.Errorf("blackIpRepo|UpdateWithCache:%v", err)
 	}
 	var err error
@@ -156,7 +157,7 @@ func (r *blackIpRepo) UpdateWithCache(ip string, blackIp *biz.BlackIp, cols ...s
 }
 
 // GetFromCache 根据id从缓存获取奖品
-func (r *blackIpRepo) GetFromCache(id uint) (*biz.BlackIp, error) {
+func (r *blackIpRepo) GetFromCache(id uint) (*entity.BlackIp, error) {
 	redisCli := r.data.cache
 	idStr := strconv.FormatUint(uint64(id), 10)
 	ret, exist, err := redisCli.Get(context.Background(), idStr)
@@ -169,7 +170,7 @@ func (r *blackIpRepo) GetFromCache(id uint) (*biz.BlackIp, error) {
 		return nil, nil
 	}
 
-	blackIp := biz.BlackIp{}
+	blackIp := entity.BlackIp{}
 	if err = json.Unmarshal([]byte(ret), &blackIp); err != nil {
 		return nil, fmt.Errorf("blackIpRepo|GetFromCache|json.Unmarshal:%v", err)
 	}
@@ -177,7 +178,7 @@ func (r *blackIpRepo) GetFromCache(id uint) (*biz.BlackIp, error) {
 	return &blackIp, nil
 }
 
-func (s *blackIpRepo) SetByCache(blackIp *biz.BlackIp) error {
+func (s *blackIpRepo) SetByCache(blackIp *entity.BlackIp) error {
 	if blackIp == nil || blackIp.Ip == "" {
 		return fmt.Errorf("blackIpRepo|SetByCache invalid user")
 	}
@@ -196,7 +197,7 @@ func (s *blackIpRepo) SetByCache(blackIp *biz.BlackIp) error {
 	return nil
 }
 
-func (s *blackIpRepo) GetByCache(ip string) (*biz.BlackIp, error) {
+func (s *blackIpRepo) GetByCache(ip string) (*entity.BlackIp, error) {
 	redisCli := s.data.cache
 	key := fmt.Sprintf(constant.IpCacheKeyPrefix+"%s", ip)
 	valueMap, err := redisCli.HGetAll(context.Background(), key)
@@ -205,7 +206,7 @@ func (s *blackIpRepo) GetByCache(ip string) (*biz.BlackIp, error) {
 	}
 	idStr := valueMap["Id"]
 	id, _ := strconv.Atoi(idStr)
-	blackIp := &biz.BlackIp{
+	blackIp := &entity.BlackIp{
 		Id: uint(id),
 		Ip: ip,
 	}
@@ -227,7 +228,7 @@ func (s *blackIpRepo) GetByCache(ip string) (*biz.BlackIp, error) {
 	return blackIp, nil
 }
 
-func (r *blackIpRepo) UpdateByCache(blackIp *biz.BlackIp) error {
+func (r *blackIpRepo) UpdateByCache(blackIp *entity.BlackIp) error {
 	redisCli := r.data.cache
 	if blackIp == nil || blackIp.Ip == "" {
 		return fmt.Errorf("blackIpRepo|UpdateByCache invalid blackUser")

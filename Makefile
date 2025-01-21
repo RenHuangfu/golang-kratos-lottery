@@ -35,6 +35,11 @@ config:
 	       $(INTERNAL_PROTO_FILES)
 	#protoc --proto_path=./internal/conf --go_out=./internal/conf/ conf.proto
 
+.PHONY: wire
+# generate wire
+wire:
+	rm -rf ./cmd/lotterysvr/wire_gen.go
+	wire ./cmd/lotterysvr/
 
 .PHONY: api
 # generate api proto

@@ -1,4 +1,4 @@
-package biz
+package usecase
 
 import (
 	"context"
@@ -6,20 +6,22 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/constant"
+	constant2 "lottery/common/constant"
+	entity2 "lottery/common/entity"
+	repo2 "lottery/common/repo"
 	"lottery/internal/utils"
 	"strings"
 	"time"
 )
 
 type AdminCase struct {
-	couponRepo       CouponRepo
-	prizeRepo        PrizeRepo
-	lotteryTimesRepo LotteryTimesRepo
-	resultRepo       ResultRepo
+	couponRepo       repo2.CouponRepo
+	prizeRepo        repo2.PrizeRepo
+	lotteryTimesRepo repo2.LotteryTimesRepo
+	resultRepo       repo2.ResultRepo
 }
 
-func NewAdminCase(pr PrizeRepo, cr CouponRepo, lr LotteryTimesRepo, rp ResultRepo) *AdminCase {
+func NewAdminCase(pr repo2.PrizeRepo, cr repo2.CouponRepo, lr repo2.LotteryTimesRepo, rp repo2.ResultRepo) *AdminCase {
 	return &AdminCase{
 		couponRepo:       cr,
 		prizeRepo:        pr,
@@ -29,7 +31,7 @@ func NewAdminCase(pr PrizeRepo, cr CouponRepo, lr LotteryTimesRepo, rp ResultRep
 }
 
 // GetPrizeList 获取db奖品列表
-func (a *AdminCase) GetPrizeList(ctx context.Context) ([]*Prize, error) {
+func (a *AdminCase) GetPrizeList(ctx context.Context) ([]*entity2.Prize, error) {
 	//log.InfoContextf(ctx, "GetPrizeList!!!!!")
 	list, err := a.prizeRepo.GetAll()
 	if err != nil {
@@ -40,7 +42,7 @@ func (a *AdminCase) GetPrizeList(ctx context.Context) ([]*Prize, error) {
 }
 
 // GetPrizeListWithCache 获取db奖品列表
-func (a *AdminCase) GetPrizeListWithCache(ctx context.Context) ([]*Prize, error) {
+func (a *AdminCase) GetPrizeListWithCache(ctx context.Context) ([]*entity2.Prize, error) {
 	list, err := a.prizeRepo.GetAllWithCache()
 	if err != nil {
 		log.ErrorContextf(ctx, "prizeCase|GetPrizeList err:%v", err)
@@ -50,15 +52,15 @@ func (a *AdminCase) GetPrizeListWithCache(ctx context.Context) ([]*Prize, error)
 }
 
 // GetViewPrizeList 获取奖品列表,这个方法用于管理后台使用，因为管理后台不需要高性能，所以不走缓存
-func (a *AdminCase) GetViewPrizeList(ctx context.Context) ([]*ViewPrize, error) {
+func (a *AdminCase) GetViewPrizeList(ctx context.Context) ([]*entity2.ViewPrize, error) {
 	list, err := a.prizeRepo.GetAll()
 	if err != nil {
 		log.ErrorContextf(ctx, "prizeCase|GetPrizeList err:%v", err)
 		return nil, fmt.Errorf("prizeCase|GetPrizeList: %v", err)
 	}
-	prizeList := make([]*ViewPrize, 0)
+	prizeList := make([]*entity2.ViewPrize, 0)
 	for _, prize := range list {
-		if prize.SysStatus != constant.PrizeStatusNormal {
+		if prize.SysStatus != constant2.PrizeStatusNormal {
 			continue
 		}
 		num, err := a.prizeRepo.GetPrizePoolNum(prize.Id)
@@ -66,7 +68,7 @@ func (a *AdminCase) GetViewPrizeList(ctx context.Context) ([]*ViewPrize, error) 
 			return nil, fmt.Errorf("prizeCase|GetPrizeList: %v", err)
 		}
 		title := fmt.Sprintf("【%d】%s", num, prize.Title)
-		prizeList = append(prizeList, &ViewPrize{
+		prizeList = append(prizeList, &entity2.ViewPrize{
 			Id:        prize.Id,
 			Title:     title,
 			Img:       prize.Img,
@@ -80,18 +82,18 @@ func (a *AdminCase) GetViewPrizeList(ctx context.Context) ([]*ViewPrize, error) 
 }
 
 // GetViewPrizeListWithCache 获取奖品列表,优先从缓存获取
-func (a *AdminCase) GetViewPrizeListWithCache(ctx context.Context) ([]*ViewPrize, error) {
+func (a *AdminCase) GetViewPrizeListWithCache(ctx context.Context) ([]*entity2.ViewPrize, error) {
 	list, err := a.prizeRepo.GetAllWithCache()
 	if err != nil {
 		log.ErrorContextf(ctx, "prizeCase|GetPrizeList err:%v", err)
 		return nil, fmt.Errorf("prizeCase|GetPrizeList: %v", err)
 	}
-	prizeList := make([]*ViewPrize, 0)
+	prizeList := make([]*entity2.ViewPrize, 0)
 	for _, prize := range list {
-		if prize.SysStatus != constant.PrizeStatusNormal {
+		if prize.SysStatus != constant2.PrizeStatusNormal {
 			continue
 		}
-		prizeList = append(prizeList, &ViewPrize{
+		prizeList = append(prizeList, &entity2.ViewPrize{
 			Id:        prize.Id,
 			Title:     prize.Title,
 			Img:       prize.Img,
@@ -104,13 +106,13 @@ func (a *AdminCase) GetViewPrizeListWithCache(ctx context.Context) ([]*ViewPrize
 }
 
 // GetPrize 获取某个奖品
-func (a *AdminCase) GetPrize(ctx context.Context, id uint) (*ViewPrize, error) {
+func (a *AdminCase) GetPrize(ctx context.Context, id uint) (*entity2.ViewPrize, error) {
 	prizeModel, err := a.prizeRepo.Get(id)
 	if err != nil {
 		log.ErrorContextf(ctx, "prizeCase|GetPrize:%v", err)
 		return nil, fmt.Errorf("prizeCase|GetPrize:%v", err)
 	}
-	prize := &ViewPrize{
+	prize := &entity2.ViewPrize{
 		Id:        prizeModel.Id,
 		Title:     prizeModel.Title,
 		Img:       prizeModel.Img,
@@ -122,13 +124,13 @@ func (a *AdminCase) GetPrize(ctx context.Context, id uint) (*ViewPrize, error) {
 }
 
 // AddPrize 新增奖品
-func (a *AdminCase) AddPrize(ctx context.Context, viewPrize *ViewPrize) error {
+func (a *AdminCase) AddPrize(ctx context.Context, viewPrize *entity2.ViewPrize) error {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("AddPrize panic%v\n", err)
 		}
 	}()
-	prize := Prize{
+	prize := entity2.Prize{
 		Title:        viewPrize.Title,
 		PrizeNum:     viewPrize.PrizeNum,
 		LeftNum:      viewPrize.PrizeNum,
@@ -151,15 +153,15 @@ func (a *AdminCase) AddPrize(ctx context.Context, viewPrize *ViewPrize) error {
 }
 
 // AddPrizeList 新增奖品列表
-func (a *AdminCase) AddPrizeList(ctx context.Context, viewPrizeList []*ViewPrize) error {
+func (a *AdminCase) AddPrizeList(ctx context.Context, viewPrizeList []*entity2.ViewPrize) error {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("AddPrize panic%v\n", err)
 		}
 	}()
-	prizeList := make([]Prize, 0)
+	prizeList := make([]entity2.Prize, 0)
 	for _, viewPrize := range viewPrizeList {
-		prize := Prize{
+		prize := entity2.Prize{
 			Title:        viewPrize.Title,
 			PrizeNum:     viewPrize.PrizeNum,
 			LeftNum:      viewPrize.PrizeNum,
@@ -200,8 +202,8 @@ func (a *AdminCase) ClearCoupon(ctx context.Context) error {
 }
 
 // AddPrizeWithPool 带奖品池的新增奖品实现
-func (a *AdminCase) AddPrizeWithPool(ctx context.Context, viewPrize *ViewPrize) error {
-	prize := Prize{
+func (a *AdminCase) AddPrizeWithPool(ctx context.Context, viewPrize *entity2.ViewPrize) error {
+	prize := entity2.Prize{
 		Title:        viewPrize.Title,
 		PrizeNum:     viewPrize.PrizeNum,
 		LeftNum:      viewPrize.PrizeNum,
@@ -229,8 +231,8 @@ func (a *AdminCase) AddPrizeWithPool(ctx context.Context, viewPrize *ViewPrize) 
 }
 
 // AddPrizeWithCache 带缓存优化的新增奖品
-func (a *AdminCase) AddPrizeWithCache(ctx context.Context, viewPrize *ViewPrize) error {
-	prize := Prize{
+func (a *AdminCase) AddPrizeWithCache(ctx context.Context, viewPrize *entity2.ViewPrize) error {
+	prize := entity2.Prize{
 		Title:        viewPrize.Title,
 		PrizeNum:     viewPrize.PrizeNum,
 		LeftNum:      viewPrize.PrizeNum,
@@ -253,7 +255,7 @@ func (a *AdminCase) AddPrizeWithCache(ctx context.Context, viewPrize *ViewPrize)
 	return nil
 }
 
-func (a *AdminCase) UpdateDbPrizeWithCache(ctx context.Context, prize *Prize, cols ...string) error {
+func (a *AdminCase) UpdateDbPrizeWithCache(ctx context.Context, prize *entity2.Prize, cols ...string) error {
 	if err := a.prizeRepo.UpdateWithCache(prize, cols...); err != nil {
 		log.ErrorContextf(ctx, "UpdateDbPrizeWithCache|%v", err)
 		return fmt.Errorf("UpdateDbPrizeWithCache|%v", err)
@@ -261,7 +263,7 @@ func (a *AdminCase) UpdateDbPrizeWithCache(ctx context.Context, prize *Prize, co
 	return nil
 }
 
-func (a *AdminCase) UpdateDbPrize(ctx context.Context, db *gorm.DB, prize *Prize, cols ...string) error {
+func (a *AdminCase) UpdateDbPrize(ctx context.Context, db *gorm.DB, prize *entity2.Prize, cols ...string) error {
 	if err := a.prizeRepo.Update(prize, cols...); err != nil {
 		log.ErrorContextf(ctx, "UpdateDbPrize|%v", err)
 		return fmt.Errorf("UpdateDbPrize|%v", err)
@@ -269,12 +271,12 @@ func (a *AdminCase) UpdateDbPrize(ctx context.Context, db *gorm.DB, prize *Prize
 	return nil
 }
 
-func (a *AdminCase) UpdatePrize(ctx context.Context, viewPrize *ViewPrize) error {
+func (a *AdminCase) UpdatePrize(ctx context.Context, viewPrize *entity2.ViewPrize) error {
 	if viewPrize == nil || viewPrize.Id <= 0 {
 		log.Errorf("adminCase|UpdatePrize invalid prize err:%v", viewPrize)
 		return fmt.Errorf("adminCase|UpdatePrize invalid prize")
 	}
-	prize := Prize{
+	prize := entity2.Prize{
 		Title:        viewPrize.Title,
 		PrizeNum:     viewPrize.PrizeNum,
 		LeftNum:      viewPrize.LeftNum,
@@ -314,12 +316,12 @@ func (a *AdminCase) UpdatePrize(ctx context.Context, viewPrize *ViewPrize) error
 	return nil
 }
 
-func (a *AdminCase) UpdatePrizeWithPool(ctx context.Context, viewPrize *ViewPrize) error {
+func (a *AdminCase) UpdatePrizeWithPool(ctx context.Context, viewPrize *entity2.ViewPrize) error {
 	if viewPrize == nil || viewPrize.Id <= 0 {
 		log.Errorf("adminCase|UpdatePrize invalid prize err:%v", viewPrize)
 		return fmt.Errorf("adminCase|UpdatePrize invalid prize")
 	}
-	prize := Prize{
+	prize := entity2.Prize{
 		Title:        viewPrize.Title,
 		PrizeNum:     viewPrize.PrizeNum,
 		LeftNum:      viewPrize.LeftNum,
@@ -370,10 +372,10 @@ func (a *AdminCase) UpdatePrizeWithPool(ctx context.Context, viewPrize *ViewPriz
 }
 
 // GetCouponList 获取优惠券列表,库存优惠券数量和缓存优惠券数量，当这两个数量不一致的时候，需要重置缓存优惠券数量
-func (a *AdminCase) GetCouponList(ctx context.Context, prizeID uint) ([]*ViewCouponInfo, int64, int64, error) {
+func (a *AdminCase) GetCouponList(ctx context.Context, prizeID uint) ([]*entity2.ViewCouponInfo, int64, int64, error) {
 	var (
-		viewCouponList []*ViewCouponInfo
-		couponList     []*Coupon
+		viewCouponList []*entity2.ViewCouponInfo
+		couponList     []*entity2.Coupon
 		err            error
 		dbNum          int64
 		cacheNum       int64
@@ -397,7 +399,7 @@ func (a *AdminCase) GetCouponList(ctx context.Context, prizeID uint) ([]*ViewCou
 		}
 	}
 	for _, coupon := range couponList {
-		viewCouponList = append(viewCouponList, &ViewCouponInfo{
+		viewCouponList = append(viewCouponList, &entity2.ViewCouponInfo{
 			Id:      coupon.Id,
 			PrizeId: coupon.PrizeId,
 			Code:    coupon.Code,
@@ -418,7 +420,7 @@ func (a *AdminCase) ImportCoupon(ctx context.Context, prizeID uint, codes string
 	if err != nil {
 		return 0, 0, fmt.Errorf("adminCase|ImportCoupon invalid prizeID:%d", prizeID)
 	}
-	if prize == nil || prize.PrizeType != constant.PrizeTypeCouponDiff {
+	if prize == nil || prize.PrizeType != constant2.PrizeTypeCouponDiff {
 		//log.InfoContextf(ctx, "adminCase|ImportCoupon invalid prize type:%d with prize_id %d", prize.PrizeType, prizeID)
 		return 0, 0, fmt.Errorf("adminCase|ImportCoupon prize_type is not coupon with prize_id %d", prizeID)
 	}
@@ -429,7 +431,7 @@ func (a *AdminCase) ImportCoupon(ctx context.Context, prizeID uint, codes string
 	codeList := strings.Split(codes, "\n")
 	for _, code := range codeList {
 		code = strings.TrimSpace(code)
-		coupon := &Coupon{
+		coupon := &entity2.Coupon{
 			PrizeId: prizeID,
 			Code:    code,
 			//SysCreated: time.Now(),
@@ -453,7 +455,7 @@ func (a *AdminCase) ImportCouponWithCache(ctx context.Context, prizeID uint, cod
 	if err != nil {
 		return 0, 0, fmt.Errorf("adminCase|ImportCoupon invalid prizeID:%d", prizeID)
 	}
-	if prize == nil || prize.PrizeType != constant.PrizeTypeCouponDiff {
+	if prize == nil || prize.PrizeType != constant2.PrizeTypeCouponDiff {
 		log.InfoContextf(ctx, "adminCase|ImportCoupon invalid prize type:%d with prize_id %d", prize.PrizeType, prizeID)
 		return 0, 0, fmt.Errorf("adminCase|ImportCoupon prize_type is not coupon with prize_id %d", prizeID)
 	}
@@ -464,7 +466,7 @@ func (a *AdminCase) ImportCouponWithCache(ctx context.Context, prizeID uint, cod
 	codeList := strings.Split(codes, "\n")
 	for _, code := range codeList {
 		code = strings.TrimSpace(code)
-		coupon := &Coupon{
+		coupon := &entity2.Coupon{
 			PrizeId: prizeID,
 			Code:    code,
 			//SysCreated: time.Now(),
@@ -502,7 +504,7 @@ func (a *AdminCase) ReCacheCoupon(ctx context.Context, prizeID uint) (int64, int
 }
 
 // ResetPrizePlan 重置某种奖品的发奖计划
-func (a *AdminCase) ResetPrizePlan(ctx context.Context, prize *Prize) error {
+func (a *AdminCase) ResetPrizePlan(ctx context.Context, prize *entity2.Prize) error {
 	if prize == nil || prize.Id < 1 {
 		return fmt.Errorf("limitCase|ResetGiftPrizePlan invalid prize")
 	}
@@ -572,7 +574,7 @@ func (a *AdminCase) ResetPrizePlan(ctx context.Context, prize *Prize) error {
 		return fmt.Errorf("limitCase|ResetGiftPrizePlan:%v", err)
 	}
 	// 保存奖品的分布计划数据
-	info := &Prize{
+	info := &entity2.Prize{
 		Id:         prize.Id,
 		LeftNum:    prize.PrizeNum,
 		PrizePlan:  string(bytes),
@@ -588,8 +590,8 @@ func (a *AdminCase) ResetPrizePlan(ctx context.Context, prize *Prize) error {
 }
 
 // clearPrizeData 清空奖品的发放计划
-func (a *AdminCase) clearPrizePlan(ctx context.Context, prize *Prize) error {
-	info := &Prize{
+func (a *AdminCase) clearPrizePlan(ctx context.Context, prize *entity2.Prize) error {
+	info := &entity2.Prize{
 		Id:        prize.Id,
 		PrizePlan: "",
 	}
@@ -607,7 +609,7 @@ func (a *AdminCase) clearPrizePlan(ctx context.Context, prize *Prize) error {
 
 // setGiftPool 设置奖品池中某种奖品的数量
 func (a *AdminCase) setPrizePool(ctx context.Context, id uint, num int) error {
-	key := constant.PrizePoolCacheKey
+	key := constant2.PrizePoolCacheKey
 	if err := a.prizeRepo.SetPrizePoolNum(key, id, num); err != nil {
 		log.ErrorContextf(ctx, "AdminCase|setPrizePool|%v", err)
 		return fmt.Errorf("AdminCase|setPrizePool|%v", err)
@@ -621,7 +623,7 @@ func (a *AdminCase) prizePlanOneDay(num int) map[int][60]int {
 	hourPrizeNumList := [24]int{} // 长度为24的数组表示1天中每个小时对应的奖品数
 	// 计算一天中的24个小时，每个小时应该发出的奖品数，为什么是100，100表示每一天的权重百分比
 	if num > 100 {
-		for _, h := range DayPrizeWeights {
+		for _, h := range entity2.DayPrizeWeights {
 			hourPrizeNumList[h]++
 		}
 		for h := 0; h < 24; h++ {
@@ -637,7 +639,7 @@ func (a *AdminCase) prizePlanOneDay(num int) map[int][60]int {
 		// 随机将这个奖品分配到某一个小时上
 		hourIndex := utils.Random(100)
 		//log.Infof("hourIndex = %d", hourIndex)
-		h := DayPrizeWeights[hourIndex]
+		h := entity2.DayPrizeWeights[hourIndex]
 		hourPrizeNumList[h]++
 	}
 	//log.Infof("hourPrizeNumList = %v", hourPrizeNumList)
@@ -672,8 +674,8 @@ func (a *AdminCase) prizePlanOneDay(num int) map[int][60]int {
 // 将prizeData格式化成具体到一个时间（分钟）的奖品数量
 // 结构为： [day][hour][minute]num
 // result: [][时间, 数量]
-func (a *AdminCase) formatPrizePlan(now time.Time, prizePlanDays int, prizePlan map[int]map[int][60]int) ([]*TimePrizeInfo, error) {
-	result := make([]*TimePrizeInfo, 0)
+func (a *AdminCase) formatPrizePlan(now time.Time, prizePlanDays int, prizePlan map[int]map[int][60]int) ([]*entity2.TimePrizeInfo, error) {
+	result := make([]*entity2.TimePrizeInfo, 0)
 	nowHour := now.Hour()
 	for i := 0; i < prizePlanDays; i++ {
 		dayPrizePlanMap, ok := prizePlan[i]
@@ -694,7 +696,7 @@ func (a *AdminCase) formatPrizePlan(now time.Time, prizePlanDays int, prizePlan 
 				}
 				// 找到特定一个时间的计划数据
 				minuteTimeStamp := hourTimeStamp + m*60 // minuteTimeStamp 为发奖周期中的每一分钟对应的时刻
-				result = append(result, &TimePrizeInfo{
+				result = append(result, &entity2.TimePrizeInfo{
 					Time: utils.FormatFromUnixTime(int64(minuteTimeStamp)),
 					Num:  num,
 				})
@@ -761,10 +763,10 @@ func (a *AdminCase) fillPrizePool() (int, error) {
 		if len(prize.PrizePlan) <= 7 {
 			continue
 		}
-		prizePlanList := []*TimePrizeInfo{}
+		prizePlanList := []*entity2.TimePrizeInfo{}
 		if err = json.Unmarshal([]byte(prize.PrizePlan), &prizePlanList); err != nil {
-			log.Errorf("FillPrizePool|Unmarshal TimePrizeInfo err:%v", err)
-			return 0, fmt.Errorf("FillPrizePool|Unmarshal TimePrizeInfo:%v", err)
+			log.Errorf("FillPrizePool|Unmarshal entity.TimePrizeInfo err:%v", err)
+			return 0, fmt.Errorf("FillPrizePool|Unmarshal entity.TimePrizeInfo:%v", err)
 		}
 		index := 0
 		prizeNum := 0
@@ -791,7 +793,7 @@ func (a *AdminCase) fillPrizePool() (int, error) {
 			if index < len(prizePlanList) {
 				prizePlanList = prizePlanList[index:]
 			} else {
-				prizePlanList = make([]*TimePrizeInfo, 0)
+				prizePlanList = make([]*entity2.TimePrizeInfo, 0)
 			}
 			// 将新的发奖计划更新到数据库
 			bytes, err := json.Marshal(&prizePlanList)
@@ -799,7 +801,7 @@ func (a *AdminCase) fillPrizePool() (int, error) {
 				log.Errorf("FillPrizePool|Marshal err:%v", err)
 				return 0, fmt.Errorf("FillPrizePool|Marshal:%v", err)
 			}
-			updatePrize := &Prize{
+			updatePrize := &entity2.Prize{
 				Id:        prize.Id,
 				PrizePlan: string(bytes),
 			}
@@ -822,7 +824,7 @@ func (a *AdminCase) fillPrizePool() (int, error) {
 
 // incrPrizePool 根据计划数据，往奖品池增加奖品数量
 func (a *AdminCase) incrPrizePool(prizeID uint, num int) (int, error) {
-	key := constant.PrizePoolCacheKey
+	key := constant2.PrizePoolCacheKey
 	cnt, err := a.prizeRepo.IncrPrizePoolNum(key, prizeID, num)
 	if err != nil {
 		log.Errorf("AdminCase|incrPrizePool|%v", err)

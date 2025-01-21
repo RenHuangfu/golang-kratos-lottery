@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	uuid2 "github.com/google/uuid"
-	"lottery/internal/constant"
+	"lottery/common/constant"
 	"math/rand"
 	"strconv"
 	"strings"

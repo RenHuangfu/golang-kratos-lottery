@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -18,20 +18,4 @@ type BlackUser struct {
 
 func (m *BlackUser) TableName() string {
 	return "t_black_user"
-}
-
-type BlackUserRepo interface {
-	GetByUserID(uid uint) (*BlackUser, error)
-	GetByUserIDWithCache(uid uint) (*BlackUser, error)
-	GetAll() ([]*BlackUser, error)
-	CountAll() (int64, error)
-	Create(blackUser *BlackUser) error
-	Delete(id uint) error
-	DeleteWithCache(uid uint) error
-	Update(userID uint, blackUser *BlackUser, cols ...string) error
-	UpdateWithCache(userID uint, blackUser *BlackUser, cols ...string) error
-	GetFromCache(id uint) (*BlackUser, error)
-	GetByCache(uid uint) (*BlackUser, error)
-	SetByCache(blackUser *BlackUser) error
-	UpdateByCache(blackUser *BlackUser) error
 }

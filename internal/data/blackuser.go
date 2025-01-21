@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"lottery/internal/utils"
 	"strconv"
 )
@@ -16,18 +17,18 @@ type blackUserRepo struct {
 	data *Data
 }
 
-func NewBlackUserRepo(data *Data) biz.BlackUserRepo {
+func NewBlackUserRepo(data *Data) repo.BlackUserRepo {
 	return &blackUserRepo{
 		data: data,
 	}
 }
 
-func (r *blackUserRepo) GetByUserID(uid uint) (*biz.BlackUser, error) {
+func (r *blackUserRepo) GetByUserID(uid uint) (*entity.BlackUser, error) {
 	db := r.data.db
-	blackUser := &biz.BlackUser{
+	blackUser := &entity.BlackUser{
 		UserId: uid,
 	}
-	err := db.Model(&biz.BlackUser{}).First(blackUser).Error
+	err := db.Model(&entity.BlackUser{}).First(blackUser).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -37,7 +38,7 @@ func (r *blackUserRepo) GetByUserID(uid uint) (*biz.BlackUser, error) {
 	return blackUser, nil
 }
 
-func (r *blackUserRepo) GetByUserIDWithCache(uid uint) (*biz.BlackUser, error) {
+func (r *blackUserRepo) GetByUserIDWithCache(uid uint) (*entity.BlackUser, error) {
 	// 优先从缓存获取
 	blackUser, err := r.GetByCache(uid)
 	// 从缓存获取到用户
@@ -45,11 +46,11 @@ func (r *blackUserRepo) GetByUserIDWithCache(uid uint) (*biz.BlackUser, error) {
 		return blackUser, nil
 	}
 	// 缓存没有获取到黑明单用户
-	blackUser = &biz.BlackUser{
+	blackUser = &entity.BlackUser{
 		UserId: uid,
 	}
 	db := r.data.db
-	err = db.Model(&biz.BlackUser{}).First(blackUser).Error
+	err = db.Model(&entity.BlackUser{}).First(blackUser).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -63,10 +64,10 @@ func (r *blackUserRepo) GetByUserIDWithCache(uid uint) (*biz.BlackUser, error) {
 	return blackUser, nil
 }
 
-func (r *blackUserRepo) GetAll() ([]*biz.BlackUser, error) {
+func (r *blackUserRepo) GetAll() ([]*entity.BlackUser, error) {
 	db := r.data.db
-	var BlackUsers []*biz.BlackUser
-	err := db.Model(&biz.BlackUser{}).Where("").Order("sys_updated desc").Find(&BlackUsers).Error
+	var BlackUsers []*entity.BlackUser
+	err := db.Model(&entity.BlackUser{}).Where("").Order("sys_updated desc").Find(&BlackUsers).Error
 	if err != nil {
 		return nil, fmt.Errorf("blackUserRepo|GetAll:%v", err)
 	}
@@ -76,14 +77,14 @@ func (r *blackUserRepo) GetAll() ([]*biz.BlackUser, error) {
 func (r *blackUserRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.BlackUser{}).Count(&num).Error
+	err := db.Model(&entity.BlackUser{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("blackUserRepo|CountAll:%v", err)
 	}
 	return num, nil
 }
 
-func (r *blackUserRepo) Create(blackUser *biz.BlackUser) error {
+func (r *blackUserRepo) Create(blackUser *entity.BlackUser) error {
 	db := r.data.db
 	err := db.Model(blackUser).Create(blackUser).Error
 	if err != nil {
@@ -94,7 +95,7 @@ func (r *blackUserRepo) Create(blackUser *biz.BlackUser) error {
 
 func (r *blackUserRepo) Delete(id uint) error {
 	db := r.data.db
-	blackUser := &biz.BlackUser{Id: id}
+	blackUser := &entity.BlackUser{Id: id}
 	if err := db.Model(blackUser).Delete(blackUser).Error; err != nil {
 		return fmt.Errorf("blackUserRepo|Delete:%v", err)
 	}
@@ -103,17 +104,17 @@ func (r *blackUserRepo) Delete(id uint) error {
 
 func (r *blackUserRepo) DeleteWithCache(uid uint) error {
 	db := r.data.db
-	blackUser := &biz.BlackUser{UserId: uid}
+	blackUser := &entity.BlackUser{UserId: uid}
 	if err := r.UpdateByCache(blackUser); err != nil {
 		return fmt.Errorf("blackUserRepo|DeleteWithCache:%v", err)
 	}
-	if err := db.Model(&biz.BlackUser{}).Delete(blackUser).Error; err != nil {
+	if err := db.Model(&entity.BlackUser{}).Delete(blackUser).Error; err != nil {
 		return fmt.Errorf("blackUserRepo|Delete:%v", err)
 	}
 	return nil
 }
 
-func (r *blackUserRepo) Update(userID uint, blackUser *biz.BlackUser, cols ...string) error {
+func (r *blackUserRepo) Update(userID uint, blackUser *entity.BlackUser, cols ...string) error {
 	db := r.data.db
 	var err error
 	if len(cols) == 0 {
@@ -127,9 +128,9 @@ func (r *blackUserRepo) Update(userID uint, blackUser *biz.BlackUser, cols ...st
 	return nil
 }
 
-func (r *blackUserRepo) UpdateWithCache(userID uint, blackUser *biz.BlackUser, cols ...string) error {
+func (r *blackUserRepo) UpdateWithCache(userID uint, blackUser *entity.BlackUser, cols ...string) error {
 	db := r.data.db
-	if err := r.UpdateByCache(&biz.BlackUser{UserId: userID}); err != nil {
+	if err := r.UpdateByCache(&entity.BlackUser{UserId: userID}); err != nil {
 		return fmt.Errorf("blackUserRepo|DeleteWithCache:%v", err)
 	}
 	var err error
@@ -145,7 +146,7 @@ func (r *blackUserRepo) UpdateWithCache(userID uint, blackUser *biz.BlackUser, c
 }
 
 // GetFromCache 根据id从缓存获取奖品
-func (r *blackUserRepo) GetFromCache(id uint) (*biz.BlackUser, error) {
+func (r *blackUserRepo) GetFromCache(id uint) (*entity.BlackUser, error) {
 	redisCli := r.data.cache
 	idStr := strconv.FormatUint(uint64(id), 10)
 	ret, exist, err := redisCli.Get(context.Background(), idStr)
@@ -158,14 +159,14 @@ func (r *blackUserRepo) GetFromCache(id uint) (*biz.BlackUser, error) {
 		return nil, nil
 	}
 
-	blackUser := biz.BlackUser{}
-	if err = json.Unmarshal([]byte(ret), &biz.BlackUser{}); err != nil {
+	blackUser := entity.BlackUser{}
+	if err = json.Unmarshal([]byte(ret), &entity.BlackUser{}); err != nil {
 		return nil, fmt.Errorf("blackUserRepo|GetFromCache|json.Unmarshal:%v", err)
 	}
 	return &blackUser, nil
 }
 
-func (r *blackUserRepo) GetByCache(uid uint) (*biz.BlackUser, error) {
+func (r *blackUserRepo) GetByCache(uid uint) (*entity.BlackUser, error) {
 	redisCli := r.data.cache
 	key := fmt.Sprintf(constant.UserCacheKeyPrefix+"%d", uid)
 	valueMap, err := redisCli.HGetAll(context.Background(), key)
@@ -180,7 +181,7 @@ func (r *blackUserRepo) GetByCache(uid uint) (*biz.BlackUser, error) {
 	}
 	idStr := valueMap["Id"]
 	id, _ := strconv.Atoi(idStr)
-	blackUser := &biz.BlackUser{
+	blackUser := &entity.BlackUser{
 		Id:       uint(id),
 		UserId:   userID,
 		UserName: valueMap["UserName"],
@@ -207,7 +208,7 @@ func (r *blackUserRepo) GetByCache(uid uint) (*biz.BlackUser, error) {
 	return blackUser, nil
 }
 
-func (r *blackUserRepo) SetByCache(blackUser *biz.BlackUser) error {
+func (r *blackUserRepo) SetByCache(blackUser *entity.BlackUser) error {
 	redisCli := r.data.cache
 	if blackUser == nil || blackUser.UserId <= 0 {
 		return fmt.Errorf("blackUserRepo|SetByCache invalid user")
@@ -231,7 +232,7 @@ func (r *blackUserRepo) SetByCache(blackUser *biz.BlackUser) error {
 	return nil
 }
 
-func (r *blackUserRepo) UpdateByCache(blackUser *biz.BlackUser) error {
+func (r *blackUserRepo) UpdateByCache(blackUser *entity.BlackUser) error {
 	redisCli := r.data.cache
 	if blackUser == nil || blackUser.UserId <= 0 {
 		return fmt.Errorf("blackUserRepo|UpdateByCache invalid blackUser")

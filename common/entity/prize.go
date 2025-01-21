@@ -1,4 +1,4 @@
-package biz
+package entity
 
 import "time"
 
@@ -27,33 +27,4 @@ type Prize struct {
 
 func (p *Prize) TableName() string {
 	return "t_prize"
-}
-
-type PrizeRepo interface {
-	Get(id uint) (*Prize, error)
-	GetWithCache(id uint) (*Prize, error)
-	GetAll() ([]*Prize, error)
-	GetAllWithCache() ([]*Prize, error)
-	CountAll() (int64, error)
-	CountAllWithCache() (int64, error)
-	Create(prize *Prize) error
-	CreateInBatches(prizeList []Prize) error
-	CreateWithCache(prize *Prize) error
-	Delete(id uint) error
-	DeleteAll() error
-	DeleteWithCache(id uint) error
-	Update(prize *Prize, cols ...string) error
-	UpdateWithCache(prize *Prize, cols ...string) error
-	GetFromCache(id uint) (*Prize, error)
-	GetAllUsefulPrizeList() ([]*Prize, error)
-	GetAllUsefulPrizeListWithCache() ([]*Prize, error)
-	DecrLeftNum(id int, num int) (bool, error)
-	DecrLeftNumByPool(prizeID int) (int64, error)
-	IncrLeftNum(id int, column string, num int) error
-	SetAllByCache(prizeList []*Prize) error
-	GetAllByCache() ([]*Prize, error)
-	UpdateByCache(prize *Prize) error
-	GetPrizePoolNum(prizeID uint) (int, error)
-	SetPrizePoolNum(key string, prizeID uint, num int) error
-	IncrPrizePoolNum(key string, prizeID uint, num int) (int, error)
 }

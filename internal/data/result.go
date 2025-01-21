@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/log"
 	"gorm.io/gorm"
-	"lottery/internal/biz"
+	"lottery/common/entity"
+	"lottery/common/repo"
 	"strconv"
 )
 
@@ -14,23 +15,23 @@ type resultRepo struct {
 	data *Data
 }
 
-func NewResultRepo(data *Data) biz.ResultRepo {
+func NewResultRepo(data *Data) repo.ResultRepo {
 	return &resultRepo{
 		data: data,
 	}
 }
 
-func (r *resultRepo) Get(id uint) (*biz.Result, error) {
+func (r *resultRepo) Get(id uint) (*entity.Result, error) {
 	db := r.data.db
 	// 优先从缓存获取
 	result, err := r.GetFromCache(id)
 	if err == nil && result != nil {
 		return result, nil
 	}
-	result = &biz.Result{
+	result = &entity.Result{
 		Id: id,
 	}
-	err = db.Model(&biz.Result{}).First(result).Error
+	err = db.Model(&entity.Result{}).First(result).Error
 	if err != nil {
 		if err.Error() == gorm.ErrRecordNotFound.Error() {
 			return nil, nil
@@ -40,10 +41,10 @@ func (r *resultRepo) Get(id uint) (*biz.Result, error) {
 	return result, nil
 }
 
-func (r *resultRepo) GetAll() ([]*biz.Result, error) {
+func (r *resultRepo) GetAll() ([]*entity.Result, error) {
 	db := r.data.db
-	var results []*biz.Result
-	err := db.Model(&biz.Result{}).Where("").Order("sys_updated desc").Find(&results).Error
+	var results []*entity.Result
+	err := db.Model(&entity.Result{}).Where("").Order("sys_updated desc").Find(&results).Error
 	if err != nil {
 		return nil, fmt.Errorf("resultRepo|GetAll:%v", err)
 	}
@@ -53,16 +54,16 @@ func (r *resultRepo) GetAll() ([]*biz.Result, error) {
 func (r *resultRepo) CountAll() (int64, error) {
 	db := r.data.db
 	var num int64
-	err := db.Model(&biz.Result{}).Count(&num).Error
+	err := db.Model(&entity.Result{}).Count(&num).Error
 	if err != nil {
 		return 0, fmt.Errorf("resultRepo|CountAll:%v", err)
 	}
 	return num, nil
 }
 
-func (r *resultRepo) Create(result *biz.Result) error {
+func (r *resultRepo) Create(result *entity.Result) error {
 	db := r.data.db
-	err := db.Model(&biz.Result{}).Create(result).Error
+	err := db.Model(&entity.Result{}).Create(result).Error
 	if err != nil {
 		return fmt.Errorf("resultRepo|Create:%v", err)
 	}
@@ -71,8 +72,8 @@ func (r *resultRepo) Create(result *biz.Result) error {
 
 func (r *resultRepo) Delete(id uint) error {
 	db := r.data.db
-	result := &biz.Result{Id: id}
-	if err := db.Model(&biz.Result{}).Delete(result).Error; err != nil {
+	result := &entity.Result{Id: id}
+	if err := db.Model(&entity.Result{}).Delete(result).Error; err != nil {
 		return fmt.Errorf("resultRepo|Delete:%v")
 	}
 	return nil
@@ -87,7 +88,7 @@ func (r *resultRepo) DeleteAll() error {
 	return nil
 }
 
-func (r *resultRepo) Update(result *biz.Result, cols ...string) error {
+func (r *resultRepo) Update(result *entity.Result, cols ...string) error {
 	db := r.data.db
 	var err error
 	if len(cols) == 0 {
@@ -102,7 +103,7 @@ func (r *resultRepo) Update(result *biz.Result, cols ...string) error {
 }
 
 // GetFromCache 根据id从缓存获取奖品
-func (r *resultRepo) GetFromCache(id uint) (*biz.Result, error) {
+func (r *resultRepo) GetFromCache(id uint) (*entity.Result, error) {
 	redisCli := r.data.cache
 	idStr := strconv.FormatUint(uint64(id), 10)
 	ret, exist, err := redisCli.Get(context.Background(), idStr)
@@ -115,8 +116,8 @@ func (r *resultRepo) GetFromCache(id uint) (*biz.Result, error) {
 		return nil, nil
 	}
 
-	result := biz.Result{}
-	json.Unmarshal([]byte(ret), &biz.Result{})
+	result := entity.Result{}
+	json.Unmarshal([]byte(ret), &entity.Result{})
 
 	return &result, nil
 }

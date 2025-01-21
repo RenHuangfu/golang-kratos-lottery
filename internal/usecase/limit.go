@@ -1,11 +1,13 @@
-package biz
+package usecase
 
 import (
 	"context"
 	"fmt"
 	"github.com/BitofferHub/pkg/middlewares/cache"
 	"github.com/BitofferHub/pkg/middlewares/log"
-	"lottery/internal/constant"
+	"lottery/common/constant"
+	entity2 "lottery/common/entity"
+	repo2 "lottery/common/repo"
 	"lottery/internal/utils"
 	"math"
 	"strconv"
@@ -13,23 +15,21 @@ import (
 )
 
 type LimitCase struct {
-	lotteryTimesRepo LotteryTimesRepo
-	blackIpRepo      BlackIpRepo
-	blackUserRepo    BlackUserRepo
-	tm               Transaction
+	lotteryTimesRepo repo2.LotteryTimesRepo
+	blackIpRepo      repo2.BlackIpRepo
+	blackUserRepo    repo2.BlackUserRepo
 }
 
-func NewLimitCase(bur BlackUserRepo, bir BlackIpRepo, ltr LotteryTimesRepo, tm Transaction) *LimitCase {
+func NewLimitCase(bur repo2.BlackUserRepo, bir repo2.BlackIpRepo, ltr repo2.LotteryTimesRepo) *LimitCase {
 	return &LimitCase{
 		blackUserRepo:    bur,
 		blackIpRepo:      bir,
 		lotteryTimesRepo: ltr,
-		tm:               tm,
 	}
 }
 
 // GetUserCurrentLotteryTimes 获取当天该用户的抽奖次数
-func (l *LimitCase) GetUserCurrentLotteryTimes(ctx context.Context, uid uint) (*LotteryTimes, error) {
+func (l *LimitCase) GetUserCurrentLotteryTimes(ctx context.Context, uid uint) (*entity2.LotteryTimes, error) {
 	y, m, d := time.Now().Date()
 	strDay := fmt.Sprintf("%d%02d%02d", y, m, d)
 	day, _ := strconv.Atoi(strDay)
@@ -62,7 +62,7 @@ func (l *LimitCase) CheckUserDayLotteryTimes(ctx context.Context, uid uint) (boo
 	y, m, d := time.Now().Date()
 	strDay := fmt.Sprintf("%d%02d%02d", y, m, d)
 	day, _ := strconv.Atoi(strDay)
-	lotteryTimesInfo := &LotteryTimes{
+	lotteryTimesInfo := &entity2.LotteryTimes{
 		UserId: uid,
 		Day:    uint(day),
 		Num:    1,
@@ -115,7 +115,7 @@ func (l *LimitCase) CheckUserDayLotteryTimesWithCache(ctx context.Context, uid u
 	y, m, d := time.Now().Date()
 	strDay := fmt.Sprintf("%d%02d%02d", y, m, d)
 	day, _ := strconv.Atoi(strDay)
-	lotteryTimesInfo := &LotteryTimes{
+	lotteryTimesInfo := &entity2.LotteryTimes{
 		UserId: uid,
 		Day:    uint(day),
 		Num:    1,
@@ -142,7 +142,7 @@ func (l *LimitCase) CheckIPLimit(ctx context.Context, strIp string) int64 {
 	return ret
 }
 
-func (l *LimitCase) CheckBlackIP(ctx context.Context, ip string) (bool, *BlackIp, error) {
+func (l *LimitCase) CheckBlackIP(ctx context.Context, ip string) (bool, *entity2.BlackIp, error) {
 	info, err := l.blackIpRepo.GetByIP(ip)
 	if err != nil {
 		log.ErrorContextf(ctx, "CheckBlackIP|GetByIP:%v", err)
@@ -158,7 +158,7 @@ func (l *LimitCase) CheckBlackIP(ctx context.Context, ip string) (bool, *BlackIp
 	return true, info, nil
 }
 
-func (l *LimitCase) CheckBlackIPWithCache(ctx context.Context, ip string) (bool, *BlackIp, error) {
+func (l *LimitCase) CheckBlackIPWithCache(ctx context.Context, ip string) (bool, *entity2.BlackIp, error) {
 	info, err := l.blackIpRepo.GetByIPWithCache(ip)
 	if err != nil {
 		log.ErrorContextf(ctx, "CheckBlackIP|GetByIP:%v", err)
@@ -174,7 +174,7 @@ func (l *LimitCase) CheckBlackIPWithCache(ctx context.Context, ip string) (bool,
 	return true, info, nil
 }
 
-func (l *LimitCase) CheckBlackUser(ctx context.Context, uid uint) (bool, *BlackUser, error) {
+func (l *LimitCase) CheckBlackUser(ctx context.Context, uid uint) (bool, *entity2.BlackUser, error) {
 	info, err := l.blackUserRepo.GetByUserID(uid)
 	if err != nil {
 		log.ErrorContextf(ctx, "CheckBlackUser|Get:%v", err)
@@ -187,7 +187,7 @@ func (l *LimitCase) CheckBlackUser(ctx context.Context, uid uint) (bool, *BlackU
 	return true, info, nil
 }
 
-func (l *LimitCase) CheckBlackUserWithCache(ctx context.Context, uid uint) (bool, *BlackUser, error) {
+func (l *LimitCase) CheckBlackUserWithCache(ctx context.Context, uid uint) (bool, *entity2.BlackUser, error) {
 	info, err := l.blackUserRepo.GetByUserIDWithCache(uid)
 	if err != nil {
 		log.ErrorContextf(ctx, "CheckBlackUser|Get:%v", err)
